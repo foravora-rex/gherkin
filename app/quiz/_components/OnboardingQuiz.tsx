@@ -135,7 +135,7 @@ export default function OnboardingQuiz() {
       >
         <div className="w-full max-w-lg">
           {/* Step counter */}
-          <p className="text-xs uppercase tracking-widest text-stone-300 mb-8">
+          <p className="text-xs uppercase tracking-widest text-stone-400 mb-8">
             {step + 1} / {QUESTIONS.length}
           </p>
 
@@ -183,7 +183,7 @@ export default function OnboardingQuiz() {
                 className={`px-8 py-3 rounded-full text-sm transition-all duration-150 ${
                   canAdvanceMulti
                     ? 'bg-[#85A16A] text-white hover:opacity-90'
-                    : 'bg-stone-100 text-stone-300 cursor-not-allowed'
+                    : 'bg-stone-100 text-stone-400 cursor-not-allowed'
                 }`}
               >
                 Next

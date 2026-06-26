@@ -76,7 +76,7 @@ export default function ReflectionFlow({ promptId, promptText, followUp, preferr
   if (step === 'answer') {
     return (
       <div className="max-w-2xl w-full mx-auto px-8 py-16">
-        <p className="text-xs uppercase tracking-widest text-stone-300 mb-8">Reflect</p>
+        <p className="text-xs uppercase tracking-widest text-stone-400 mb-8">Reflect</p>
         <p className="text-xl font-light text-stone-800 leading-relaxed mb-10">
           {promptText}
         </p>
@@ -94,7 +94,7 @@ export default function ReflectionFlow({ promptId, promptText, followUp, preferr
             className={`px-8 py-3 rounded-full text-sm transition-all ${
               answer1.trim().length >= 10
                 ? 'bg-[#85A16A] text-white hover:opacity-90'
-                : 'bg-stone-100 text-stone-300 cursor-not-allowed'
+                : 'bg-stone-100 text-stone-400 cursor-not-allowed'
             }`}
           >
             Continue
@@ -107,7 +107,7 @@ export default function ReflectionFlow({ promptId, promptText, followUp, preferr
   if (step === 'follow-up') {
     return (
       <div className="max-w-2xl w-full mx-auto px-8 py-16">
-        <p className="text-xs uppercase tracking-widest text-stone-300 mb-8">One more</p>
+        <p className="text-xs uppercase tracking-widest text-stone-400 mb-8">One more</p>
         <p className="text-xl font-light text-stone-800 leading-relaxed mb-10">
           {followUp}
         </p>
@@ -125,7 +125,7 @@ export default function ReflectionFlow({ promptId, promptText, followUp, preferr
             className={`px-8 py-3 rounded-full text-sm transition-all ${
               answer2.trim().length >= 5
                 ? 'bg-[#85A16A] text-white hover:opacity-90'
-                : 'bg-stone-100 text-stone-300 cursor-not-allowed'
+                : 'bg-stone-100 text-stone-400 cursor-not-allowed'
             }`}
           >
             Continue
@@ -138,7 +138,7 @@ export default function ReflectionFlow({ promptId, promptText, followUp, preferr
   if (step === 'tone') {
     return (
       <div className="max-w-2xl w-full mx-auto px-8 py-16">
-        <p className="text-xs uppercase tracking-widest text-stone-300 mb-8">
+        <p className="text-xs uppercase tracking-widest text-stone-400 mb-8">
           How shall we render it?
         </p>
         <h2 className="text-2xl font-light text-stone-900 mb-10">Choose a tone.</h2>
@@ -204,7 +204,7 @@ export default function ReflectionFlow({ promptId, promptText, followUp, preferr
   if (step === 'result') {
     return (
       <div className="max-w-2xl w-full mx-auto px-8 py-16">
-        <p className="text-xs uppercase tracking-widest text-stone-300 mb-8">
+        <p className="text-xs uppercase tracking-widest text-stone-400 mb-8">
           {selectedTone === 'as-written' ? 'As written' : TONES.find((t) => t.id === selectedTone)?.label}
         </p>
         <textarea

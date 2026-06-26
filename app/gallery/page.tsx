@@ -51,13 +51,13 @@ export default async function GalleryPage() {
       <main className="flex-1 px-8 py-12 max-w-4xl mx-auto w-full">
         <div className="mb-12 flex items-end justify-between">
           <div>
-            <p className="text-xs uppercase tracking-widest text-stone-300 mb-2">
+            <p className="text-xs uppercase tracking-widest text-stone-400 mb-2">
               A gallery of self
             </p>
             <h1 className="text-3xl font-light text-stone-900">Your gallery.</h1>
           </div>
           {reflections.length > 0 && (
-            <p className="text-xs text-stone-300">
+            <p className="text-xs text-stone-400">
               {reflections.length} {reflections.length === 1 ? 'reflection' : 'reflections'}
             </p>
           )}
@@ -82,7 +82,7 @@ export default async function GalleryPage() {
                 key={r.id as string}
                 className="break-inside-avoid mb-6 bg-white border border-stone-200 rounded-2xl p-6"
               >
-                <p className="text-xs text-stone-300 mb-4">
+                <p className="text-xs text-stone-400 mb-4">
                   {formatDate(r.created_at as Date)}
                 </p>
 
@@ -95,7 +95,7 @@ export default async function GalleryPage() {
                 </p>
 
                 <div className="mt-6 pt-4 border-t border-stone-100">
-                  <span className="text-xs text-stone-300 uppercase tracking-widest">
+                  <span className="text-xs text-stone-400 uppercase tracking-widest">
                     {TONE_LABELS[r.tone as string] ?? r.tone as string}
                   </span>
                 </div>

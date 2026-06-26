@@ -15,7 +15,7 @@ export default function ExistingPreferences({ tags }: { tags: string[] }) {
   return (
     <div className="flex-1 flex flex-col items-center justify-center px-8">
       <div className="max-w-lg w-full">
-        <p className="text-xs uppercase tracking-widest text-stone-300 mb-8">
+        <p className="text-xs uppercase tracking-widest text-stone-400 mb-8">
           Your interests
         </p>
         <h2 className="text-3xl font-light text-stone-900 mb-3">
