@@ -1,15 +1,5 @@
 import Link from 'next/link';
-
-const TAG_LABELS: Record<string, string> = {
-  'music': 'Music',
-  'screen-stage': 'Films & series',
-  'stories-words': 'Books & writing',
-  'gaming': 'Gaming',
-  'theatre': 'Theatre & live events',
-  'podcasts': 'Podcasts',
-  'art': 'Art & photography',
-  'sport': 'Sport & movement',
-};
+import { formatTag } from '@/lib/tags';
 
 export default function ExistingPreferences({ tags }: { tags: string[] }) {
   return (
@@ -31,7 +21,7 @@ export default function ExistingPreferences({ tags }: { tags: string[] }) {
               key={tag}
               className="px-4 py-1.5 rounded-full border border-[#85A16A] text-[#85A16A] text-sm"
             >
-              {TAG_LABELS[tag] ?? tag}
+              {formatTag(tag)}
             </span>
           ))}
         </div>
@@ -44,10 +34,10 @@ export default function ExistingPreferences({ tags }: { tags: string[] }) {
             Take me to my draw
           </Link>
           <Link
-            href="/quiz?recalibrate=true"
+            href="/quiz/preferences"
             className="text-sm text-[#466353] hover:text-stone-700 transition-colors"
           >
-            Recalibrate my interests
+            Refine preferences
           </Link>
         </div>
       </div>
