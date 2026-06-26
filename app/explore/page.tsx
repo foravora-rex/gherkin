@@ -1,6 +1,7 @@
 import { auth } from '@clerk/nextjs/server';
 import { redirect } from 'next/navigation';
 import { getDrawForUser } from '@/lib/draw';
+import { drawLimiter } from '@/lib/ratelimit';
 import AuthHeader from '@/components/AuthHeader';
 import RefreshButton from './_components/RefreshButton';
 import ExploreCard from './_components/ExploreCard';
@@ -22,7 +23,11 @@ export default async function ExplorePage() {
   const { userId } = await auth();
   if (!userId) redirect('/sign-in');
 
-  const cards = await getDrawForUser(userId);
+  const { success, remaining } = await drawLimiter.limit(userId);
+
+  const isExhausted = !success;
+  const isLastDraw = success && remaining === 0;
+  const cards = isExhausted ? [] : await getDrawForUser(userId);
 
   return (
     <div className="flex-1 flex flex-col">
@@ -39,14 +44,16 @@ export default async function ExplorePage() {
                 Explore today&apos;s prompt.
               </h1>
             </div>
-            <RefreshButton />
+            {!isExhausted && !isLastDraw && <RefreshButton />}
           </div>
 
-          {cards.length === 0 ? (
-            <p className="text-sm text-[#466353]">
-              No prompts available. Try again shortly.
-            </p>
-          ) : (
+          {(isExhausted || isLastDraw) && (
+            <div className="mb-8 px-5 py-4 rounded-xl border border-stone-200 bg-stone-50 text-sm text-stone-600">
+              Our croupier has shuffled their last card for today — apparently {isExhausted ? 'this many' : '50'} draws in a single day is enough to exhaust even the most dedicated deck-handler. They&apos;re resting now. Come back tomorrow for a fresh hand.
+            </div>
+          )}
+
+          {cards.length > 0 && (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {cards.map((card) => (
                 <ExploreCard
