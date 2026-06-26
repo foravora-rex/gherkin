@@ -3,6 +3,7 @@ import { auth } from '@clerk/nextjs/server';
 import { UserButton } from '@clerk/nextjs';
 import { redirect } from 'next/navigation';
 import { sql } from '@/lib/db';
+import { formatTag } from '@/lib/tags';
 
 const TONE_LABELS: Record<string, string> = {
   poetic: 'Poetic',
@@ -12,24 +13,6 @@ const TONE_LABELS: Record<string, string> = {
   'as-written': 'As written',
 };
 
-const TAG_LABELS: Record<string, string> = {
-  'indie-alternative': 'Indie & Alternative',
-  'folk-singer-songwriter': 'Folk & Singer-Songwriter',
-  'classical-jazz': 'Classical & Jazz',
-  'electronic-dance': 'Electronic & Dance',
-  'hip-hop-rnb': 'Hip-Hop & R&B',
-  'world-music': 'World Music',
-  'metal-rock': 'Metal & Rock',
-  'blues-soul-country': 'Blues, Soul & Country',
-};
-
-function formatTag(tag: string): string {
-  if (TAG_LABELS[tag]) return TAG_LABELS[tag];
-  return tag
-    .split('-')
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ');
-}
 
 function formatDate(date: Date): string {
   return new Date(date).toLocaleDateString('en-GB', {
