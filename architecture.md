@@ -288,6 +288,18 @@ The correct production approach — per-user encryption keys with embeddings sto
 
 Neon encrypts all data at rest with AES-256. This is transparent — no application code required.
 
+### Rate Limiting: Upstash Redis + `@upstash/ratelimit`
+
+All AI routes are rate-limited per authenticated user using Upstash Redis with a sliding window algorithm. Sliding window means limits are rolling over any 24-hour period — fairer than a fixed midnight reset for users across time zones.
+
+| Route | Limit |
+|---|---|
+| Tone rendering (Claude) | 20 per user per 24h |
+| Pattern surfacing (Claude) | 5 per user per 24h |
+| Card draw (OpenAI embedding) | 50 per user per 24h |
+
+Upstash was chosen over a Postgres counter because Redis is atomic under concurrent requests — two simultaneous calls cannot both pass the same rate limit check. A Postgres counter with a `SELECT` then `UPDATE` pattern has a race condition window that Redis eliminates. Upstash free tier (10,000 commands/day) is sufficient for demo scale.
+
 ### HTTPS
 
 Enforced by Vercel on all deployments. Required for Clerk auth and for the Web Speech API (browser enforces HTTPS for microphone access).
