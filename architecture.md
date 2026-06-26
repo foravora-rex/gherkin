@@ -264,9 +264,17 @@ HNSW (Hierarchical Navigable Small World) is chosen over IVFFlat because it prov
 
 ## 11. Security
 
-### Row-Level Security (RLS)
+### Access Control: Application-Level Auth via Clerk (Demo)
 
-RLS is enforced at the Postgres level on `reflections` and `user_profiles`. Even if application code passes the wrong `clerk_id` due to a bug, the database rejects the query. This is defence in depth — security that does not rely solely on application correctness.
+For the demo, access control is enforced at the application layer. Every protected API route calls `await auth()` from Clerk server-side to retrieve the authenticated `clerk_id`. Every query against `reflections` and `user_profiles` explicitly filters by that `clerk_id`. The client never asserts its own identity.
+
+**Why Postgres Row-Level Security (RLS) was not implemented at this stage:**
+
+RLS was evaluated and deliberately deferred. The primary reason is an architectural tension with our database driver: `@neondatabase/serverless` uses HTTP-based connections rather than persistent TCP connections. RLS requires setting a session variable (`SET LOCAL app.current_user_id = '...'`) and running the protected query on the same connection. With HTTP-based connections, this requires wrapping every protected query in a transaction — a non-trivial restructuring of the database client that introduces complexity disproportionate to the demo's threat model.
+
+Application-level filtering via Clerk is verifiable and sufficient at this scale: the routes are few, the pattern is consistent, and each one is auditable.
+
+**When to implement RLS:** As the product scales — multiple developers, multiple services connecting to the same database, or a public launch — RLS should be added as a second line of defence. At that point, the correct approach is to use the pg-compatible Neon driver (persistent TCP), set `app.current_user_id` per transaction, and define policies on `reflections` and `user_profiles` that enforce `clerk_id` matching at the database level regardless of which service is querying.
 
 ### Why Application-Level Encryption Was Not Implemented
 
@@ -274,7 +282,7 @@ The reflections table holds highly personal data. Encrypting it at the applicati
 
 Pattern surfacing requires vector similarity search over `reflections.embedding`. That embedding is a semantic fingerprint of the reflection content. If we encrypt the text but store the embedding unencrypted, an attacker with database access can use the embedding to approximate the original text — making the encryption partially cosmetic. A fully consistent encryption model would require encrypting both text and embedding, which makes vector search impossible.
 
-The correct production approach — per-user encryption keys with embeddings stored in a separate, access-controlled store — is out of scope for this demo. The controls in place (RLS, Neon encryption at rest, Clerk-verified server-side auth, HTTPS) provide appropriate protection for demo scale.
+The correct production approach — per-user encryption keys with embeddings stored in a separate, access-controlled store — is out of scope for this demo. The controls in place (Neon encryption at rest, Clerk-verified server-side auth, HTTPS) provide appropriate protection for demo scale.
 
 ### Encryption at Rest
 
@@ -296,6 +304,7 @@ Enforced by Vercel on all deployments. Required for Clerk auth and for the Web S
 | Thumbs-down avoidance tracking | Post-MVP | Needs enough session data to be meaningful |
 | Production Clerk instance | Post-demo | Development instance configured. Production instance needed before public launch. |
 | Per-user encryption keys | Post-demo | Requires rethinking the RAG architecture; out of scope for demo |
+| Postgres Row-Level Security | Post-demo | Deferred due to HTTP driver incompatibility; revisit when switching to persistent TCP connections at scale |
 | Shareable card export | Nice-to-have | Core loop validated first |
 
 ---
