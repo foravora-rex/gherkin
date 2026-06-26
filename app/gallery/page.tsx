@@ -12,6 +12,25 @@ const TONE_LABELS: Record<string, string> = {
   'as-written': 'As written',
 };
 
+const TAG_LABELS: Record<string, string> = {
+  'indie-alternative': 'Indie & Alternative',
+  'folk-singer-songwriter': 'Folk & Singer-Songwriter',
+  'classical-jazz': 'Classical & Jazz',
+  'electronic-dance': 'Electronic & Dance',
+  'hip-hop-rnb': 'Hip-Hop & R&B',
+  'world-music': 'World Music',
+  'metal-rock': 'Metal & Rock',
+  'blues-soul-country': 'Blues, Soul & Country',
+};
+
+function formatTag(tag: string): string {
+  if (TAG_LABELS[tag]) return TAG_LABELS[tag];
+  return tag
+    .split('-')
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+}
+
 function formatDate(date: Date): string {
   return new Date(date).toLocaleDateString('en-GB', {
     day: 'numeric',
@@ -105,7 +124,7 @@ export default async function GalleryPage() {
                         key={tag}
                         className="text-xs px-2 py-0.5 rounded-full border border-[#466353]/30 text-[#466353]"
                       >
-                        {tag}
+                        {formatTag(tag)}
                       </span>
                     ))}
                   </div>
