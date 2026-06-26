@@ -143,7 +143,7 @@ export default function ReflectionFlow({ promptId, promptText, followUp, preferr
         </p>
         <h2 className="text-2xl font-light text-stone-900 mb-10">Choose a tone.</h2>
         {error && <p className="text-sm text-red-400 mb-6">{error}</p>}
-        <div className="grid grid-cols-2 gap-3 mb-10">
+        <div className="grid grid-cols-2 gap-3 mb-3">
           {TONES.map((tone) => (
             <button
               key={tone.id}
@@ -164,17 +164,24 @@ export default function ReflectionFlow({ promptId, promptText, followUp, preferr
             </button>
           ))}
         </div>
-        <div className="flex items-center justify-between">
-          <button
-            onClick={() => {
-              setRenderedText(fullTranscript);
-              setSelectedTone('as-written');
-              setStep('result');
-            }}
-            className="text-sm text-stone-400 hover:text-stone-700 transition-colors"
-          >
-            Save as written
-          </button>
+
+        <button
+          onClick={() => {
+            setRenderedText(fullTranscript);
+            setSelectedTone('as-written');
+            setStep('result');
+          }}
+          className={`w-full text-left px-5 py-4 rounded-xl border border-dashed transition-all duration-150 mb-10 ${
+            selectedTone === 'as-written'
+              ? 'border-[#85A16A] bg-[#85A16A]/8'
+              : 'border-stone-200 hover:border-stone-300'
+          }`}
+        >
+          <p className="text-sm font-medium text-stone-700 mb-1">As written</p>
+          <p className="text-xs text-stone-400">Skip the AI — save your own words exactly</p>
+        </button>
+
+        <div className="flex justify-end">
           <button
             onClick={handleRender}
             className="bg-[#85A16A] text-white px-8 py-3 rounded-full text-sm hover:opacity-90 transition-opacity"
