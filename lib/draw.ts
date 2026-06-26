@@ -52,59 +52,71 @@ export async function getDrawForUser(userId: string): Promise<DrawCard[]> {
   const adjacentCategories = CULTURAL_CATEGORIES.filter((c) => !preferredCategories.includes(c));
   const adjacentPool = adjacentCategories.length > 0 ? adjacentCategories : CULTURAL_CATEGORIES;
 
-  // Known: semantically closest prompt across all categories
+  // Known: random pick from the 10 semantically closest prompts across all categories
   const knownRows =
     answeredIds.length > 0
       ? await sql`
-          SELECT id, text, category, tags FROM prompts
-          WHERE id != ALL(${answeredIds}::uuid[])
-          ORDER BY embedding <=> ${embeddingLiteral}::vector
-          LIMIT 1
+          SELECT id, text, category, tags FROM (
+            SELECT id, text, category, tags FROM prompts
+            WHERE id != ALL(${answeredIds}::uuid[])
+            ORDER BY embedding <=> ${embeddingLiteral}::vector
+            LIMIT 10
+          ) pool ORDER BY random() LIMIT 1
         `
       : await sql`
-          SELECT id, text, category, tags FROM prompts
-          ORDER BY embedding <=> ${embeddingLiteral}::vector
-          LIMIT 1
+          SELECT id, text, category, tags FROM (
+            SELECT id, text, category, tags FROM prompts
+            ORDER BY embedding <=> ${embeddingLiteral}::vector
+            LIMIT 10
+          ) pool ORDER BY random() LIMIT 1
         `;
   const known = (knownRows[0] as Prompt) ?? null;
 
   const excluded1 = [...answeredIds, ...(known ? [known.id] : [])];
 
-  // Adjacent: semantically closest prompt from cultural categories outside user's preferences
+  // Adjacent: random pick from the 10 closest prompts outside user's preferred categories
   const adjacentRows =
     excluded1.length > 0
       ? await sql`
-          SELECT id, text, category, tags FROM prompts
-          WHERE category = ANY(${adjacentPool}::text[])
-          AND id != ALL(${excluded1}::uuid[])
-          ORDER BY embedding <=> ${embeddingLiteral}::vector
-          LIMIT 1
+          SELECT id, text, category, tags FROM (
+            SELECT id, text, category, tags FROM prompts
+            WHERE category = ANY(${adjacentPool}::text[])
+            AND id != ALL(${excluded1}::uuid[])
+            ORDER BY embedding <=> ${embeddingLiteral}::vector
+            LIMIT 10
+          ) pool ORDER BY random() LIMIT 1
         `
       : await sql`
-          SELECT id, text, category, tags FROM prompts
-          WHERE category = ANY(${adjacentPool}::text[])
-          ORDER BY embedding <=> ${embeddingLiteral}::vector
-          LIMIT 1
+          SELECT id, text, category, tags FROM (
+            SELECT id, text, category, tags FROM prompts
+            WHERE category = ANY(${adjacentPool}::text[])
+            ORDER BY embedding <=> ${embeddingLiteral}::vector
+            LIMIT 10
+          ) pool ORDER BY random() LIMIT 1
         `;
   const adjacent = (adjacentRows[0] as Prompt) ?? null;
 
   const excluded2 = [...excluded1, ...(adjacent ? [adjacent.id] : [])];
 
-  // Unexpected: most semantically distant prompt from the universal category
+  // Unexpected: random pick from the 10 most semantically distant universal prompts
   const unexpectedRows =
     excluded2.length > 0
       ? await sql`
-          SELECT id, text, category, tags FROM prompts
-          WHERE category = 'universal'
-          AND id != ALL(${excluded2}::uuid[])
-          ORDER BY embedding <=> ${embeddingLiteral}::vector DESC
-          LIMIT 1
+          SELECT id, text, category, tags FROM (
+            SELECT id, text, category, tags FROM prompts
+            WHERE category = 'universal'
+            AND id != ALL(${excluded2}::uuid[])
+            ORDER BY embedding <=> ${embeddingLiteral}::vector DESC
+            LIMIT 10
+          ) pool ORDER BY random() LIMIT 1
         `
       : await sql`
-          SELECT id, text, category, tags FROM prompts
-          WHERE category = 'universal'
-          ORDER BY embedding <=> ${embeddingLiteral}::vector DESC
-          LIMIT 1
+          SELECT id, text, category, tags FROM (
+            SELECT id, text, category, tags FROM prompts
+            WHERE category = 'universal'
+            ORDER BY embedding <=> ${embeddingLiteral}::vector DESC
+            LIMIT 10
+          ) pool ORDER BY random() LIMIT 1
         `;
   const unexpected = (unexpectedRows[0] as Prompt) ?? null;
 
