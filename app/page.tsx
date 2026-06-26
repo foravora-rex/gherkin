@@ -3,7 +3,7 @@ import { SignInButton, SignUpButton, Show, UserButton } from "@clerk/nextjs";
 
 export default function Home() {
   return (
-    <div className="min-h-screen flex flex-col bg-stone-50">
+    <div className="flex-1 flex flex-col">
       <header className="flex justify-end items-center px-8 py-6">
         <Show when="signed-out">
           <div className="flex gap-4">
@@ -71,9 +71,6 @@ export default function Home() {
         </Show>
       </main>
 
-      <footer className="py-8 text-center text-xs text-stone-300">
-        Private by default. Yours alone.
-      </footer>
     </div>
   );
 }
