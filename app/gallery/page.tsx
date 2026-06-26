@@ -1,17 +1,9 @@
+import Link from 'next/link';
 import { auth } from '@clerk/nextjs/server';
 import { redirect } from 'next/navigation';
 import { sql } from '@/lib/db';
-import { formatTag } from '@/lib/tags';
 import AuthHeader from '@/components/AuthHeader';
-
-const TONE_LABELS: Record<string, string> = {
-  poetic: 'Poetic',
-  letter: 'Letter to myself',
-  'field-notes': 'Field notes',
-  unfiltered: 'Unfiltered',
-  'as-written': 'As written',
-};
-
+import GalleryCard from './_components/GalleryCard';
 
 function formatDate(date: Date): string {
   return new Date(date).toLocaleDateString('en-GB', {
@@ -67,38 +59,15 @@ export default async function GalleryPage() {
         ) : (
           <div className="columns-1 md:columns-2 gap-6">
             {reflections.map((r) => (
-              <div
+              <GalleryCard
                 key={r.id as string}
-                className="break-inside-avoid mb-6 bg-white border border-stone-200 rounded-2xl p-6"
-              >
-                <p className="text-xs text-[#466353] mb-4">
-                  {formatDate(r.created_at as Date)}
-                </p>
-
-                <p className="text-xs text-[#466353] italic mb-4 leading-relaxed">
-                  {r.prompt_text as string}
-                </p>
-
-                <p className="text-sm text-stone-700 font-light leading-relaxed whitespace-pre-wrap">
-                  {r.rendered_text as string}
-                </p>
-
-                <div className="mt-6 pt-4 border-t border-stone-100 flex items-center justify-between gap-4 flex-wrap">
-                  <span className="text-xs text-[#466353] uppercase tracking-widest">
-                    {TONE_LABELS[r.tone as string] ?? r.tone as string}
-                  </span>
-                  <div className="flex flex-wrap gap-1.5">
-                    {(r.tags as string[]).map((tag) => (
-                      <span
-                        key={tag}
-                        className="text-xs px-2 py-0.5 rounded-full border border-[#466353]/30 text-[#466353]"
-                      >
-                        {formatTag(tag)}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </div>
+                id={r.id as string}
+                promptText={r.prompt_text as string}
+                renderedText={r.rendered_text as string}
+                tone={r.tone as string}
+                createdAt={formatDate(r.created_at as Date)}
+                tags={r.tags as string[]}
+              />
             ))}
           </div>
         )}

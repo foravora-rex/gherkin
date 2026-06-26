@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { getDrawForUser } from '@/lib/draw';
 import AuthHeader from '@/components/AuthHeader';
 import RefreshButton from './_components/RefreshButton';
+import ExploreCard from './_components/ExploreCard';
 
 const CARD_LABELS: Record<string, string> = {
   known: 'From your world',
@@ -48,28 +49,15 @@ export default async function ExplorePage() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {cards.map((card) => (
-                <Link
+                <ExploreCard
                   key={card.id}
-                  href={`/reflect/${card.id}`}
-                  className="group flex flex-col justify-between bg-white border border-stone-200 rounded-2xl p-6 min-h-52 hover:border-[#85A16A] hover:shadow-sm transition-all duration-200"
-                >
-                  <p className="text-stone-800 text-base font-light leading-relaxed">
-                    {card.text}
-                  </p>
-                  <div className="flex items-center justify-between mt-6">
-                    <div className="flex flex-col gap-1">
-                      <span className="text-xs text-[#466353] uppercase tracking-widest">
-                        {CARD_LABELS[card.type]}
-                      </span>
-                      <span className="text-xs text-[#466353]">
-                        {CATEGORY_LABELS[card.category] ?? card.category}
-                      </span>
-                    </div>
-                    <span className="text-[#466353] group-hover:text-[#85A16A] transition-colors text-lg">
-                      →
-                    </span>
-                  </div>
-                </Link>
+                  id={card.id}
+                  text={card.text}
+                  type={card.type}
+                  category={card.category}
+                  cardLabel={CARD_LABELS[card.type]}
+                  categoryLabel={CATEGORY_LABELS[card.category] ?? card.category}
+                />
               ))}
             </div>
           )}

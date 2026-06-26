@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { usePostHog } from 'posthog-js/react';
 
 type Option = { label: string; value: string };
 
@@ -63,6 +64,7 @@ type Answers = {
 
 export default function OnboardingQuiz() {
   const router = useRouter();
+  const posthog = usePostHog();
   const [step, setStep] = useState(0);
   const [visible, setVisible] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -111,6 +113,11 @@ export default function OnboardingQuiz() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(answers),
+    });
+    posthog?.capture('onboarding_completed', {
+      tags: answers.tags,
+      chapter: answers.chapter,
+      inner_life: answers.inner_life,
     });
     router.push('/explore');
   }

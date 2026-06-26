@@ -14,6 +14,9 @@ export default function AuthHeader() {
         <Link href="/gallery" className="text-sm text-stone-500 hover:text-stone-900 transition-colors">
           My gallery
         </Link>
+        <Link href="/patterns" className="text-sm text-stone-500 hover:text-stone-900 transition-colors">
+          Patterns
+        </Link>
         <Link href="/quiz/preferences" className="text-sm text-stone-500 hover:text-stone-900 transition-colors">
           Preferences
         </Link>

@@ -45,7 +45,7 @@ App Router (over Pages Router) was chosen because:
 
 TypeScript throughout. The schema is strongly typed end-to-end: from the database query to the API response to the component props. This catches a class of bugs at compile time rather than runtime, which matters when moving fast on a solo project.
 
-Tailwind CSS v4 for styling. No component library — the design language is intentionally minimal and bespoke (stone palette, clean typography, no shadows or decoration). A component library would add constraints and visual debt without benefit.
+Tailwind CSS v4 for styling. No component library — the design language is intentionally minimal and bespoke (stone palette, sage green `#85A16A` CTAs, teal `#466353` secondary text). A component library would add constraints and visual debt without benefit.
 
 ---
 
@@ -62,6 +62,7 @@ Vercel provides:
 - Preview deployments on every git push (useful for sharing work-in-progress)
 - Built-in environment variable management (syncs with local `.env.local`)
 - Edge network for fast global response times
+- Native Vercel Analytics integration (cookieless, no configuration required)
 
 **When to move off Vercel Hobby:** When the app needs persistent background jobs (pattern surfacing triggered server-side), or when traffic exceeds free tier limits (~100GB bandwidth/month). Neither applies at demo scale.
 
@@ -113,7 +114,7 @@ Adding a dedicated vector database means a second connection, a second set of cr
 pgvector's HNSW (Hierarchical Navigable Small World) indexes provide approximate nearest-neighbour search at millisecond latency for our data volumes. We are not operating at the scale where a dedicated vector database's performance advantage becomes meaningful. At 10,000 prompts and tens of thousands of reflections, pgvector is fast.
 
 **3. Joins work.**
-The card draw query needs to retrieve semantically similar prompts *and* join them with category and tag metadata in a single query. In a hybrid architecture (relational DB + separate vector DB), this requires two round trips and application-side merging. pgvector does it in one query.
+The card draw query needs to retrieve prompts by tag and category in a single query. In a hybrid architecture (relational DB + separate vector DB), this requires two round trips and application-side merging. Postgres does it in one query.
 
 **Why Neon specifically:**
 - Serverless Postgres — scales to zero, no idle compute cost
@@ -143,7 +144,7 @@ Anthropic does not offer an embedding API. Claude handles text generation; a sep
 **Embedding strategy:**
 - Prompts are embedded once at seed time. The embedding captures the full semantic meaning of the question (text + follow-up if present, concatenated).
 - User reflections are embedded at save time, immediately after the user confirms their rendered text.
-- The user's interest profile (for the card draw) is embedded at query time from a string constructed from their tags: `"Interests: indie music, literary fiction. Inner life: overthinker. Chapter: in transition."`
+- Embeddings on reflections power the deferred pattern surfacing feature (see Section 12).
 
 ---
 
@@ -153,63 +154,98 @@ Anthropic does not offer an embedding API. Claude handles text generation; a sep
 
 **Reasoning:**
 
-Claude is the right model for text that needs to feel genuinely human and emotionally intelligent. The four rendering tones (Poetic, Letter to myself, Field notes, Unfiltered) require a model that can hold a consistent voice, understand register, and produce prose that doesn't feel generated. Claude Sonnet is the balance point between quality and cost — Claude Opus would be higher quality but the cost difference is not justified for a demo.
+Claude is the right model for text that needs to feel genuinely human and emotionally intelligent. The five rendering options (Poetic, Letter to myself, Field notes, Unfiltered, and As written) require a model that can hold a consistent voice, understand register, and produce prose that doesn't feel generated. Claude Sonnet is the balance point between quality and cost — Claude Opus would be higher quality but the cost difference is not justified for a demo.
 
 **Tasks handled by Claude:**
 1. **Tone rendering** — Takes the user's raw transcript and renders it in the chosen tone. The prompt is precise about each tone's characteristics.
-2. **Dig deeper** — Generates a single follow-up question after a reflection, tailored to what the user actually said.
-3. **Pattern surfacing** — Receives the top-N semantically similar reflections (retrieved via pgvector) and synthesises recurring themes. This is the RAG output step.
+2. **Pattern surfacing** — Receives the top-N semantically similar reflections (retrieved via pgvector) and synthesises recurring themes. This is the RAG output step (deferred to post-demo).
 
 **What Claude does not do:**
-- Claude does not converse. There is no chatbot. The AI is a quiet layer beneath the user experience — it renders, it observes, it occasionally offers one question. It does not interrupt.
+- Claude does not converse. There is no chatbot. The AI is a quiet layer beneath the user experience — it renders, it observes. It does not interrupt.
 
 ---
 
-## 9. RAG Architecture
+## 9. Card Draw Algorithm
 
-Retrieval-Augmented Generation powers two features: the card draw and the pattern surfacing.
+The card draw surfaces three prompts per session. This is not embedding-based retrieval — it is a tag-matching algorithm with a fallback chain and implicit learning layer.
 
-### 9.1 Card Draw (Prompt Retrieval)
+### 9.1 Why Not Cosine Distance for the Draw
 
-**The problem it solves:** Rule-based tag matching is brittle. A user tagged as "Bookworm" and "Overthinker" needs prompts that genuinely resonate — not just any prompt with those tag strings attached. Semantic similarity captures nuance that string matching cannot.
+The original architecture planned cosine similarity between a user profile embedding and prompt embeddings. This was revisited and replaced with tag-based matching for two reasons:
 
-**How it works:**
+1. **Cold start is too visible.** For new users with few reflections, the profile embedding is thin and unrepresentative. Tag matching produces visibly better results immediately.
+2. **The taxonomy is the product.** The genre tags (`indie-alternative`, `literary-fiction`, `cinema`) are a carefully designed vocabulary. Using them directly as the retrieval signal means prompt curators can reason about coverage and gaps without needing to understand embedding geometry.
 
-1. At draw time, construct a user profile string from their stored tags and life chapter.
-2. Embed that string using `text-embedding-3-small`.
-3. Query pgvector three times using cosine distance:
-   - **Known card:** `ORDER BY embedding <=> $userEmbedding LIMIT 1` — closest semantic match, excluding recently seen prompts
-   - **Adjacent card:** retrieve prompts at mid-range distance — close enough to be relevant, different enough to stretch
-   - **Unexpected card:** retrieve from the furthest semantic distance — genuinely outside the user's declared territory
-4. Return all three simultaneously.
+Cosine search remains available for pattern surfacing (Section 12), where it is the right tool: comparing a user's reflection embeddings to find recurring semantic clusters.
 
-The "adjacent" threshold is the interesting engineering decision. We use a cosine distance range rather than a fixed offset: prompts with distance between 0.3 and 0.6 from the user embedding. This is tunable once we have real user data.
+### 9.2 Three-Tier Draw
 
-### 9.2 Pattern Surfacing (Reflection Retrieval)
+Each session produces three cards:
 
-**How it works:**
+| Card | Label | Source |
+|---|---|---|
+| Known | "From your world" | Prompts whose tags match the user's genre preferences |
+| Adjacent | "Just beyond" | Prompts from the same broad category (music, film, books) but different genre |
+| Unexpected | "Something else" | Prompts from the `universal` category — inner-life questions independent of taste |
 
-1. User triggers "See patterns" explicitly.
-2. Retrieve all of the user's reflections (or the most recent N if they have many).
-3. Run a clustering query: find groups of reflections whose embeddings are close to each other — these are the recurring themes.
-4. Pass the top clusters to Claude with a synthesis prompt: *"Here are reflections from a user across different questions. Identify the 2-3 recurring themes in how they think and what they care about. Be specific — name what you see."*
-5. Return Claude's synthesis to the user.
+**Selection logic** (implemented in `lib/draw.ts`):
 
-**The cold start constraint:** Pattern surfacing requires at least 3 reflections to be meaningful. Below that threshold, the app shows an honest holding state rather than a weak result.
+```
+For each tier:
+  1. Filter out prompts the user has already answered (answered_ids)
+  2. Known: WHERE tags && knownGenreTags::text[] — array overlap
+  3. Adjacent fallback: WHERE category = ANY(broadCategories) (e.g., 'music', 'screen-stage')
+  4. Unexpected: WHERE category = 'universal'
+  5. Final fallback: any unanswered prompt
+  ORDER BY RANDOM() LIMIT 1
+```
+
+### 9.3 Implicit Learning
+
+Users declare genre preferences explicitly during onboarding and on the preferences page. But each reflection they save implies further preference signal: the tags of the prompts they engaged with deeply.
+
+At draw time, `getDrawForUser` also queries the user's reflection history and extracts the genre tags of those prompts. These *implicit tags* are merged with explicit profile tags before the known-card query runs. A user who never said they were into `comfort-tv` but has reflected on three comfort-TV prompts will receive more of them — no explicit update required.
 
 ---
 
-## 10. Schema Design
+## 10. Genre Preferences
+
+### 10.1 Taxonomy
+
+The genre taxonomy lives in `lib/tags.ts` as the single source of truth:
+
+| Broad Category | Genres |
+|---|---|
+| Music | Indie & Alternative, Pop, Folk & Singer-Songwriter, Classical & Jazz, Electronic & Dance, Hip-Hop & R&B, World Music, Metal & Rock, Blues, Soul & Country |
+| Films & Series | Cinema, Comfort TV, Anime |
+| Books & Writing | Literary Fiction, Fantasy & Sci-Fi, Fanfiction |
+
+Broad tags (`music`, `screen-stage`, `stories-words`) appear during onboarding. Genre tags (`indie-alternative`, `comfort-tv`, `literary-fiction`) are resolved after, on the preferences page.
+
+### 10.2 Preferences Page (`/quiz/preferences`)
+
+After onboarding, users can drill into genre-level preferences. For each broad cultural category they selected, the page shows its genres as selectable chips. Selecting genres updates `user_profiles.tags` to genre-level specificity (replacing the broad tag with individual genre tags).
+
+The preferences page is accessible at any time via the main navigation — this was a deliberate product decision. Self-knowledge evolves; preferences should be easy to refine, not buried in a one-time setup flow.
+
+### 10.3 Preferred Tone
+
+After a user selects the same tone three times across reflections, their `preferred_tone` is recorded in `user_profiles`. On subsequent reflection screens, that tone is pre-selected. The user can always change it — the pre-selection is a hint, not a lock.
+
+---
+
+## 11. Schema Design
 
 ### Tables
 
 **`user_profiles`**
 ```
-clerk_id   TEXT PRIMARY KEY    — Clerk user ID, e.g. "user_2abc..."
-tags       TEXT[]              — Passion tags from onboarding quiz
-inner_life TEXT[]              — Inner life tags surfaced by quiz
-chapter    TEXT                — Life chapter (nullable)
-created_at TIMESTAMPTZ
+clerk_id        TEXT PRIMARY KEY    — Clerk user ID, e.g. "user_2abc..."
+tags            TEXT[]              — Genre tags from onboarding + preferences page
+inner_life      TEXT[]              — Inner life tags surfaced by quiz
+chapter         TEXT                — Life chapter (nullable)
+preferred_tone  TEXT                — Auto-set after 3 uses of same tone (nullable)
+created_at      TIMESTAMPTZ
 ```
 
 **`prompts`**
@@ -217,9 +253,9 @@ created_at TIMESTAMPTZ
 id         UUID PRIMARY KEY
 text       TEXT                — The question
 follow_up  TEXT (nullable)     — Pre-written follow-up; non-null signals GOAT format
-category   TEXT                — Source library: 'music', 'stories-and-words', etc.
-tags       TEXT[]              — Specific tag: 'indie-alternative', 'literary-fiction', etc.
-embedding  vector(1536)        — OpenAI text-embedding-3-small
+category   TEXT                — Source library: 'music', 'screen-stage', 'universal', etc.
+tags       TEXT[]              — Genre tags: 'indie-alternative', 'literary-fiction', etc.
+embedding  vector(1536)        — OpenAI text-embedding-3-small (for pattern surfacing)
 created_at TIMESTAMPTZ
 ```
 
@@ -230,8 +266,8 @@ clerk_id      TEXT → user_profiles.clerk_id (CASCADE DELETE)
 prompt_id     UUID → prompts.id
 prompt_text   TEXT                — Denormalised for display without join
 transcript    TEXT                — Raw user input
-rendered_text TEXT                — AI-rendered version
-tone          TEXT                — 'raw' | 'poetic' | 'letter' | 'field-notes' | 'unfiltered'
+rendered_text TEXT                — AI-rendered version (or transcript if 'as-written')
+tone          TEXT                — 'as-written' | 'poetic' | 'letter' | 'field-notes' | 'unfiltered'
 embedding     vector(1536)        — For pattern surfacing
 created_at    TIMESTAMPTZ
 ```
@@ -242,7 +278,7 @@ created_at    TIMESTAMPTZ
 Adding a new passion tag requires zero schema changes — write new prompts with the new tag string and seed them. The taxonomy is a content concern, not a structural one. This was a deliberate choice to keep the system extensible without migrations.
 
 **`is_goat` column was removed.**
-Initially included as a boolean flag for GOAT-format prompts. Rejected because `follow_up IS NOT NULL` carries the same information with no redundancy. The UI renders follow-ups upfront when they exist; it does not need a separate flag to know this.
+Initially included as a boolean flag for GOAT-format prompts. Rejected because `follow_up IS NOT NULL` carries the same information with no redundancy. The UI reveals the follow-up after the first answer; it does not need a separate flag to know this.
 
 **`prompt_text` is denormalised onto `reflections`.**
 The prompt text a user reflected on should be readable in their gallery without always joining to the `prompts` table. Prompts could theoretically be edited or reworded over time; the reflection should preserve the exact question the user was given at the time they wrote their answer.
@@ -253,16 +289,67 @@ Clerk generates this identifier. It is verified server-side on every request via
 ### Indexes
 
 ```sql
--- HNSW indexes for approximate nearest-neighbour search
+-- HNSW indexes for approximate nearest-neighbour search (pattern surfacing)
 CREATE INDEX ON prompts     USING hnsw (embedding vector_cosine_ops);
 CREATE INDEX ON reflections USING hnsw (embedding vector_cosine_ops);
-```
 
-HNSW (Hierarchical Navigable Small World) is chosen over IVFFlat because it provides better recall at query time without requiring a training step on the data. For our volumes, the build time cost is negligible.
+-- GIN index for efficient array overlap queries (card draw)
+CREATE INDEX ON prompts USING gin (tags);
+```
 
 ---
 
-## 11. Security
+## 12. RAG Architecture (Pattern Surfacing)
+
+Pattern surfacing is deferred to post-demo but the infrastructure is fully in place.
+
+**How it will work:**
+
+1. User triggers "See patterns" explicitly (minimum 3 reflections required).
+2. Retrieve all of the user's reflections with their embeddings.
+3. Run a clustering query: find groups of reflections whose embeddings are close to each other — these are the recurring themes.
+4. Pass the top clusters to Claude with a synthesis prompt: *"Here are reflections from a user across different questions. Identify the 2-3 recurring themes in how they think and what they care about. Be specific — name what you see."*
+5. Return Claude's synthesis to the user.
+
+**Why the infrastructure is already there:**
+Every saved reflection generates an OpenAI embedding at save time (`lib/embeddings.ts`) and stores it in `reflections.embedding vector(1536)`. The HNSW index is built. When pattern surfacing ships, the retrieval step requires no schema changes.
+
+---
+
+## 13. Analytics
+
+**Decision:** Vercel Analytics + PostHog, over Google Analytics.
+
+**Why not Google Analytics:**
+- GA4 sets cookies, requiring a consent banner under GDPR
+- Data is processed on Google's US servers — additional legal complexity for an EU-facing product
+- The data model (sessions, bounce rate) is optimised for marketing, not product behaviour
+
+**Vercel Analytics (`@vercel/analytics`):**
+- Cookieless — no consent banner required
+- Measures Core Web Vitals and page views
+- Privacy-preserving by design: no IP storage, no cross-site tracking
+- Zero configuration: add `<Analytics />` to the root layout, done
+
+**PostHog (`posthog-js`):**
+- Open source, EU data residency (`https://eu.i.posthog.com`)
+- Event-based product analytics — measures what users actually do, not just what pages they visit
+- Free up to 1 million events per month
+
+**Key events tracked:**
+
+| Event | When | Properties |
+|---|---|---|
+| `onboarding_completed` | User finishes the 3-question quiz | `tags`, `chapter`, `inner_life` |
+| `tone_selected` | User clicks "Write it" with a tone selected | `tone`, `promptId` |
+| `reflection_saved` | User saves a reflection to gallery | `tone`, `promptId` |
+| `draw_again` | User refreshes the card draw | — |
+
+**Implementation note:** PostHog initialisation is guarded by the presence of `NEXT_PUBLIC_POSTHOG_KEY`. If the environment variable is not set (local development without a PostHog account), the provider mounts silently and all `posthog?.capture()` calls are no-ops. No errors, no broken UI.
+
+---
+
+## 14. Security
 
 ### Access Control: Application-Level Auth via Clerk (Demo)
 
@@ -271,8 +358,6 @@ For the demo, access control is enforced at the application layer. Every protect
 **Why Postgres Row-Level Security (RLS) was not implemented at this stage:**
 
 RLS was evaluated and deliberately deferred. The primary reason is an architectural tension with our database driver: `@neondatabase/serverless` uses HTTP-based connections rather than persistent TCP connections. RLS requires setting a session variable (`SET LOCAL app.current_user_id = '...'`) and running the protected query on the same connection. With HTTP-based connections, this requires wrapping every protected query in a transaction — a non-trivial restructuring of the database client that introduces complexity disproportionate to the demo's threat model.
-
-Application-level filtering via Clerk is verifiable and sufficient at this scale: the routes are few, the pattern is consistent, and each one is auditable.
 
 **When to implement RLS:** As the product scales — multiple developers, multiple services connecting to the same database, or a public launch — RLS should be added as a second line of defence. At that point, the correct approach is to use the pg-compatible Neon driver (persistent TCP), set `app.current_user_id` per transaction, and define policies on `reflections` and `user_profiles` that enforce `clerk_id` matching at the database level regardless of which service is querying.
 
@@ -296,7 +381,7 @@ All AI routes are rate-limited per authenticated user using Upstash Redis with a
 |---|---|
 | Tone rendering (Claude) | 20 per user per 24h |
 | Pattern surfacing (Claude) | 5 per user per 24h |
-| Card draw (OpenAI embedding) | 50 per user per 24h |
+| Card draw | 50 per user per 24h |
 
 Upstash was chosen over a Postgres counter because Redis is atomic under concurrent requests — two simultaneous calls cannot both pass the same rate limit check. A Postgres counter with a `SELECT` then `UPDATE` pattern has a race condition window that Redis eliminates. Upstash free tier (10,000 commands/day) is sufficient for demo scale.
 
@@ -306,33 +391,36 @@ Enforced by Vercel on all deployments. Required for Clerk auth and for the Web S
 
 ---
 
-## 12. What Is Deferred
+## 15. What Is Deferred
 
 | Feature | Status | Reason |
 |---|---|---|
+| Pattern surfacing | Infrastructure done, UI deferred | Requires ≥3 reflections to be meaningful; ship after user testing proves core loop |
 | Voice input (primary) | Web Speech API placeholder | Chrome/Edge only; acceptable for demo. Native iOS would be the production path. |
 | Scrapbook / visual mode | Post-MVP | Core hypothesis (do people reflect deeply?) must be validated before investing in the aesthetic layer |
 | Friend matching | Post-MVP | Requires user base; meaningless at demo scale |
-| Thumbs-down avoidance tracking | Post-MVP | Needs enough session data to be meaningful |
+| Shareable card export | Nice-to-have | Core loop validated first |
 | Production Clerk instance | Post-demo | Development instance configured. Production instance needed before public launch. |
 | Per-user encryption keys | Post-demo | Requires rethinking the RAG architecture; out of scope for demo |
 | Postgres Row-Level Security | Post-demo | Deferred due to HTTP driver incompatibility; revisit when switching to persistent TCP connections at scale |
-| Shareable card export | Nice-to-have | Core loop validated first |
 
 ---
 
-## 13. Cost Summary (Demo Phase)
+## 16. Cost Summary (Demo Phase)
 
 | Service | Cost |
 |---|---|
 | Vercel (hosting) | $0 — Hobby tier |
+| Vercel Analytics | $0 — included in all Vercel plans |
 | Clerk (auth) | $0 — free up to 50K Monthly Retained Users |
 | Neon Postgres + pgvector | $0 — free tier |
+| Upstash Redis (rate limiting) | $0 — free tier (10K commands/day) |
 | OpenAI embeddings | ~$0.00002 per prompt (one-time seed cost) |
 | Claude API (tone rendering) | ~$0.003 per reflection |
-| Claude API (pattern surfacing) | ~$0.005 per synthesis |
+| Claude API (pattern surfacing) | ~$0.005 per synthesis (deferred) |
+| PostHog (product analytics) | $0 — free up to 1M events/month |
 
-Total variable cost per active user per session: **~$0.008**. Negligible at demo scale.
+Total variable cost per active user per session: **~$0.003**. Negligible at demo scale.
 
 ---
 

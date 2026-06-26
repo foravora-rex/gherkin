@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { usePostHog } from 'posthog-js/react';
 
 type Step = 'answer' | 'follow-up' | 'tone' | 'rendering' | 'result';
 
@@ -21,11 +22,13 @@ const TONES = [
 
 export default function ReflectionFlow({ promptId, promptText, followUp, preferredTone }: Props) {
   const router = useRouter();
+  const posthog = usePostHog();
   const [step, setStep] = useState<Step>('answer');
   const [answer1, setAnswer1] = useState('');
   const [answer2, setAnswer2] = useState('');
   const [selectedTone, setSelectedTone] = useState(preferredTone ?? 'unfiltered');
   const [renderedText, setRenderedText] = useState('');
+  const [originalRenderedText, setOriginalRenderedText] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -34,6 +37,7 @@ export default function ReflectionFlow({ promptId, promptText, followUp, preferr
     : answer1;
 
   async function handleRender() {
+    posthog?.capture('tone_selected', { tone: selectedTone, promptId });
     setStep('rendering');
     setError('');
     try {
@@ -45,6 +49,7 @@ export default function ReflectionFlow({ promptId, promptText, followUp, preferr
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       setRenderedText(data.renderedText);
+      setOriginalRenderedText(data.renderedText);
       setStep('result');
     } catch {
       setError('Something went wrong. Please try again.');
@@ -65,6 +70,11 @@ export default function ReflectionFlow({ promptId, promptText, followUp, preferr
           renderedText,
           tone: selectedTone,
         }),
+      });
+      posthog?.capture('reflection_saved', {
+        tone: selectedTone,
+        promptId,
+        edited: renderedText !== originalRenderedText,
       });
       router.push('/gallery');
     } catch {
@@ -168,6 +178,7 @@ export default function ReflectionFlow({ promptId, promptText, followUp, preferr
         <button
           onClick={() => {
             setRenderedText(fullTranscript);
+            setOriginalRenderedText(fullTranscript);
             setSelectedTone('as-written');
             setStep('result');
           }}
