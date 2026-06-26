@@ -25,10 +25,11 @@ export default async function GalleryPage() {
   if (!userId) redirect('/sign-in');
 
   const reflections = await sql`
-    SELECT id, prompt_text, rendered_text, tone, created_at
-    FROM reflections
-    WHERE clerk_id = ${userId}
-    ORDER BY created_at DESC
+    SELECT r.id, r.prompt_text, r.rendered_text, r.tone, r.created_at, p.tags
+    FROM reflections r
+    JOIN prompts p ON p.id = r.prompt_id
+    WHERE r.clerk_id = ${userId}
+    ORDER BY r.created_at DESC
   `;
 
   return (
@@ -94,10 +95,20 @@ export default async function GalleryPage() {
                   {r.rendered_text as string}
                 </p>
 
-                <div className="mt-6 pt-4 border-t border-stone-100">
+                <div className="mt-6 pt-4 border-t border-stone-100 flex items-center justify-between gap-4 flex-wrap">
                   <span className="text-xs text-[#466353] uppercase tracking-widest">
                     {TONE_LABELS[r.tone as string] ?? r.tone as string}
                   </span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {(r.tags as string[]).map((tag) => (
+                      <span
+                        key={tag}
+                        className="text-xs px-2 py-0.5 rounded-full border border-[#466353]/30 text-[#466353]"
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
                 </div>
               </div>
             ))}
