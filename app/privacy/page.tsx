@@ -24,7 +24,7 @@ export default function PrivacyPage() {
           Privacy Policy
         </h1>
         <p className="text-xs text-[#466353] mb-12">
-          Last updated: June 2025 &mdash;{" "}
+          Last updated: June 2026 &mdash;{" "}
           <span className="italic">
             Note: this policy has not been reviewed by a lawyer. It represents
             our genuine intent, but should not be treated as legal advice.
@@ -124,6 +124,12 @@ export default function PrivacyPage() {
               </li>
               <li>
                 <span className="font-medium text-stone-800">Upstash</span> — rate limiting, request counts only (US)
+              </li>
+              <li>
+                <span className="font-medium text-stone-800">PostHog</span> — product analytics, EU data residency (eu.posthog.com). Tracks anonymised usage events (e.g. which tone was selected, whether a reflection was saved). No reflection content is sent. Only activated for signed-in users.
+              </li>
+              <li>
+                <span className="font-medium text-stone-800">Vercel Analytics</span> — cookieless page view analytics. No personal data, no cross-site tracking, no cookies.
               </li>
             </ul>
             <p>
