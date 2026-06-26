@@ -22,10 +22,10 @@ export default function Home() {
         <Show when="signed-in">
           <div className="flex items-center gap-4">
             <Link
-              href="/quiz"
+              href="/gallery"
               className="text-sm text-stone-600 hover:text-stone-900 transition-colors"
             >
-              Explore
+              My gallery
             </Link>
             <UserButton />
           </div>
@@ -63,10 +63,10 @@ export default function Home() {
         </Show>
         <Show when="signed-in">
           <Link
-            href="/quiz"
+            href="/explore"
             className="bg-[#85A16A] text-white px-8 py-3 rounded-full text-sm hover:opacity-90 transition-opacity"
           >
-            Continue to my gallery
+            Explore today&apos;s prompt
           </Link>
         </Show>
       </main>
