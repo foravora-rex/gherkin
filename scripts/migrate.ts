@@ -37,6 +37,10 @@ async function migrate() {
   `;
 
   await sql`
+    ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS preferred_tone TEXT
+  `;
+
+  await sql`
     CREATE TABLE IF NOT EXISTS reflections (
       id            UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
       clerk_id      TEXT        NOT NULL REFERENCES user_profiles(clerk_id) ON DELETE CASCADE,
