@@ -15,13 +15,13 @@ export default function ExistingPreferences({ tags }: { tags: string[] }) {
   return (
     <div className="flex-1 flex flex-col items-center justify-center px-8">
       <div className="max-w-lg w-full">
-        <p className="text-xs uppercase tracking-widest text-stone-400 mb-8">
+        <p className="text-xs uppercase tracking-widest text-[#466353] mb-8">
           Your interests
         </p>
         <h2 className="text-3xl font-light text-stone-900 mb-3">
           Here&apos;s what you told us.
         </h2>
-        <p className="text-sm text-stone-400 mb-10">
+        <p className="text-sm text-[#466353] mb-10">
           We use these to shape your draws.
         </p>
 
@@ -45,7 +45,7 @@ export default function ExistingPreferences({ tags }: { tags: string[] }) {
           </Link>
           <Link
             href="/quiz?recalibrate=true"
-            className="text-sm text-stone-400 hover:text-stone-700 transition-colors"
+            className="text-sm text-[#466353] hover:text-stone-700 transition-colors"
           >
             Recalibrate my interests
           </Link>

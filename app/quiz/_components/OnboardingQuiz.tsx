@@ -135,7 +135,7 @@ export default function OnboardingQuiz() {
       >
         <div className="w-full max-w-lg">
           {/* Step counter */}
-          <p className="text-xs uppercase tracking-widest text-stone-400 mb-8">
+          <p className="text-xs uppercase tracking-widest text-[#466353] mb-8">
             {step + 1} / {QUESTIONS.length}
           </p>
 
@@ -144,7 +144,7 @@ export default function OnboardingQuiz() {
             {question.text}
           </h2>
           {question.subtext && (
-            <p className="text-sm text-stone-400 mb-10">{question.subtext}</p>
+            <p className="text-sm text-[#466353] mb-10">{question.subtext}</p>
           )}
           {!question.subtext && <div className="mb-10" />}
 
@@ -183,7 +183,7 @@ export default function OnboardingQuiz() {
                 className={`px-8 py-3 rounded-full text-sm transition-all duration-150 ${
                   canAdvanceMulti
                     ? 'bg-[#85A16A] text-white hover:opacity-90'
-                    : 'bg-stone-100 text-stone-400 cursor-not-allowed'
+                    : 'bg-stone-100 text-[#466353] cursor-not-allowed'
                 }`}
               >
                 Next

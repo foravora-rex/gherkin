@@ -7,7 +7,7 @@ export default function RefreshButton() {
   return (
     <button
       onClick={() => router.refresh()}
-      className="text-xs text-stone-400 hover:text-stone-700 transition-colors"
+      className="text-xs text-[#466353] hover:text-stone-700 transition-colors"
     >
       Draw again
     </button>

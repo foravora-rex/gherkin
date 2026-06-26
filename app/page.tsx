@@ -33,7 +33,7 @@ export default function Home() {
       </header>
 
       <main className="flex-1 flex flex-col items-center justify-center px-8 text-center max-w-2xl mx-auto">
-        <p className="text-xs uppercase tracking-widest text-stone-400 mb-8">
+        <p className="text-xs uppercase tracking-widest text-[#466353] mb-8">
           A gallery of self
         </p>
 
@@ -44,7 +44,7 @@ export default function Home() {
         <p className="text-lg text-stone-500 mb-3 leading-relaxed">
           A gherkin is just a cucumber that went through something.
         </p>
-        <p className="text-base text-stone-400 mb-12 leading-relaxed">
+        <p className="text-base text-[#466353] mb-12 leading-relaxed">
           Why you like something is more intriguing than what you like.
         </p>
 

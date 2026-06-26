@@ -10,20 +10,20 @@ export default function PrivacyPage() {
       <header className="px-8 py-6">
         <Link
           href="/"
-          className="text-sm text-stone-400 hover:text-stone-700 transition-colors"
+          className="text-sm text-[#466353] hover:text-stone-700 transition-colors"
         >
           ← Back
         </Link>
       </header>
 
       <main className="flex-1 max-w-2xl mx-auto px-8 py-12 text-stone-700 leading-relaxed">
-        <p className="text-xs uppercase tracking-widest text-stone-400 mb-4">
+        <p className="text-xs uppercase tracking-widest text-[#466353] mb-4">
           Legal
         </p>
         <h1 className="text-3xl font-light text-stone-900 mb-2">
           Privacy Policy
         </h1>
-        <p className="text-xs text-stone-400 mb-12">
+        <p className="text-xs text-[#466353] mb-12">
           Last updated: June 2025 &mdash;{" "}
           <span className="italic">
             Note: this policy has not been reviewed by a lawyer. It represents
@@ -32,7 +32,7 @@ export default function PrivacyPage() {
         </p>
 
         <section className="mb-10">
-          <h2 className="text-sm font-semibold uppercase tracking-widest text-stone-400 mb-4">
+          <h2 className="text-sm font-semibold uppercase tracking-widest text-[#466353] mb-4">
             Who we are
           </h2>
           <p className="text-sm mb-3">
@@ -48,7 +48,7 @@ export default function PrivacyPage() {
         </section>
 
         <section className="mb-10">
-          <h2 className="text-sm font-semibold uppercase tracking-widest text-stone-400 mb-4">
+          <h2 className="text-sm font-semibold uppercase tracking-widest text-[#466353] mb-4">
             What we collect and why
           </h2>
           <div className="space-y-4 text-sm">
@@ -98,7 +98,7 @@ export default function PrivacyPage() {
         </section>
 
         <section className="mb-10">
-          <h2 className="text-sm font-semibold uppercase tracking-widest text-stone-400 mb-4">
+          <h2 className="text-sm font-semibold uppercase tracking-widest text-[#466353] mb-4">
             Who we share your data with
           </h2>
           <div className="space-y-4 text-sm">
@@ -135,7 +135,7 @@ export default function PrivacyPage() {
         </section>
 
         <section className="mb-10">
-          <h2 className="text-sm font-semibold uppercase tracking-widest text-stone-400 mb-4">
+          <h2 className="text-sm font-semibold uppercase tracking-widest text-[#466353] mb-4">
             Your rights
           </h2>
           <div className="text-sm space-y-3">
@@ -176,7 +176,7 @@ export default function PrivacyPage() {
         </section>
 
         <section className="mb-10">
-          <h2 className="text-sm font-semibold uppercase tracking-widest text-stone-400 mb-4">
+          <h2 className="text-sm font-semibold uppercase tracking-widest text-[#466353] mb-4">
             Data retention
           </h2>
           <p className="text-sm">
@@ -188,7 +188,7 @@ export default function PrivacyPage() {
         </section>
 
         <section className="mb-10">
-          <h2 className="text-sm font-semibold uppercase tracking-widest text-stone-400 mb-4">
+          <h2 className="text-sm font-semibold uppercase tracking-widest text-[#466353] mb-4">
             Governing law
           </h2>
           <p className="text-sm">

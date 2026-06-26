@@ -45,7 +45,7 @@ export default async function ExplorePage() {
         <div className="w-full max-w-4xl">
           <div className="mb-10 flex items-end justify-between">
             <div>
-              <p className="text-xs uppercase tracking-widest text-stone-400 mb-2">
+              <p className="text-xs uppercase tracking-widest text-[#466353] mb-2">
                 Today
               </p>
               <h1 className="text-3xl font-light text-stone-900">
@@ -56,7 +56,7 @@ export default async function ExplorePage() {
           </div>
 
           {cards.length === 0 ? (
-            <p className="text-sm text-stone-400">
+            <p className="text-sm text-[#466353]">
               No prompts available. Try again shortly.
             </p>
           ) : (
@@ -72,14 +72,14 @@ export default async function ExplorePage() {
                   </p>
                   <div className="flex items-center justify-between mt-6">
                     <div className="flex flex-col gap-1">
-                      <span className="text-xs text-stone-400 uppercase tracking-widest">
+                      <span className="text-xs text-[#466353] uppercase tracking-widest">
                         {CARD_LABELS[card.type]}
                       </span>
-                      <span className="text-xs text-stone-400">
+                      <span className="text-xs text-[#466353]">
                         {CATEGORY_LABELS[card.category] ?? card.category}
                       </span>
                     </div>
-                    <span className="text-stone-400 group-hover:text-[#85A16A] transition-colors text-lg">
+                    <span className="text-[#466353] group-hover:text-[#85A16A] transition-colors text-lg">
                       →
                     </span>
                   </div>

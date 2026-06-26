@@ -27,7 +27,7 @@ export default async function ReflectPage({
   return (
     <div className="flex-1 flex flex-col">
       <header className="flex justify-between items-center px-8 py-6">
-        <Link href="/explore" className="text-sm text-stone-400 hover:text-stone-700 transition-colors">
+        <Link href="/explore" className="text-sm text-[#466353] hover:text-stone-700 transition-colors">
           ← Explore
         </Link>
         <div className="flex items-center gap-6">
