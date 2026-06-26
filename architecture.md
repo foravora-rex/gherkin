@@ -372,9 +372,9 @@ All AI routes are rate-limited per authenticated user using Upstash Redis with a
 |---|---|---|
 | `POST /api/reflect/save` | 20 saves per user per 24h | ✓ `reflectionLimiter` |
 | `POST /api/patterns` | 5 requests per user per 24h | ✓ `patternLimiter` |
-| Card draw | 50 draws per user per 24h | ✗ `drawLimiter` defined but not yet wired to the explore page |
+| `GET /explore` | 50 draws per user per 24h | ✓ `drawLimiter` |
 
-Note: `drawLimiter` exists in `lib/ratelimit.ts` but is not currently applied. The `/explore` page is a Server Component — adding rate limiting there requires wiring it into the page or extracting the draw into an API route.
+The draw limit is checked in the `/explore` Server Component before calling `getDrawForUser`. On the 50th draw (`remaining === 0`) the cards still render but the Draw again button is hidden and a banner appears. On exhaustion (`success === false`) the OpenAI embedding call is skipped entirely and only the banner is shown.
 
 Upstash was chosen over a Postgres counter because Redis is atomic under concurrent requests — two simultaneous calls cannot both pass the same rate limit check. A Postgres counter with a `SELECT` then `UPDATE` pattern has a race condition window that Redis eliminates. Upstash free tier (10,000 commands/day) is sufficient for demo scale.
 
