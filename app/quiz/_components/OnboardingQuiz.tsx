@@ -49,7 +49,7 @@ const QUESTIONS: Question[] = [
     options: [
       { label: 'To understand why I feel the way I do', value: 'understanding' },
       { label: 'To make sense of my tastes and obsessions', value: 'tastes' },
-      { label: 'To find patterns in who I've been', value: 'patterns' },
+      { label: "To find patterns in who I've been", value: 'patterns' },
       { label: 'To build something permanent about myself', value: 'legacy' },
     ],
   },
