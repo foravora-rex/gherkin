@@ -112,7 +112,7 @@ export default function OnboardingQuiz() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(answers),
     });
-    router.push('/quiz/draw');
+    router.push('/explore');
   }
 
   const canAdvanceMulti = question.type === 'multi' && answers.tags.length > 0;

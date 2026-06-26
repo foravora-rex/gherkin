@@ -13,7 +13,7 @@ export default function Home() {
               </button>
             </SignInButton>
             <SignUpButton>
-              <button className="text-sm bg-stone-900 text-stone-50 px-4 py-2 rounded-full hover:bg-stone-700 transition-colors">
+              <button className="text-sm bg-[#85A16A] text-white px-4 py-2 rounded-full hover:opacity-90 transition-opacity">
                 Get started
               </button>
             </SignUpButton>
@@ -25,7 +25,7 @@ export default function Home() {
               href="/quiz"
               className="text-sm text-stone-600 hover:text-stone-900 transition-colors"
             >
-              My gallery
+              Explore
             </Link>
             <UserButton />
           </div>
@@ -56,7 +56,7 @@ export default function Home() {
 
         <Show when="signed-out">
           <SignUpButton>
-            <button className="bg-stone-900 text-stone-50 px-8 py-3 rounded-full text-sm hover:bg-stone-700 transition-colors">
+            <button className="bg-[#85A16A] text-white px-8 py-3 rounded-full text-sm hover:opacity-90 transition-opacity">
               Begin
             </button>
           </SignUpButton>
@@ -64,7 +64,7 @@ export default function Home() {
         <Show when="signed-in">
           <Link
             href="/quiz"
-            className="bg-stone-900 text-stone-50 px-8 py-3 rounded-full text-sm hover:bg-stone-700 transition-colors"
+            className="bg-[#85A16A] text-white px-8 py-3 rounded-full text-sm hover:opacity-90 transition-opacity"
           >
             Continue to my gallery
           </Link>

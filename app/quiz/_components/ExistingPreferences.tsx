@@ -38,7 +38,7 @@ export default function ExistingPreferences({ tags }: { tags: string[] }) {
 
         <div className="flex flex-col items-start gap-4">
           <Link
-            href="/quiz/draw"
+            href="/explore"
             className="bg-[#85A16A] text-white px-8 py-3 rounded-full text-sm hover:opacity-90 transition-opacity"
           >
             Take me to my draw

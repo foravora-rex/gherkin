@@ -1,7 +1,7 @@
 import { auth } from '@clerk/nextjs/server';
 import { redirect } from 'next/navigation';
 
-export default async function DrawPage() {
+export default async function ExplorePage() {
   const { userId } = await auth();
   if (!userId) redirect('/sign-in');
 
@@ -11,10 +11,10 @@ export default async function DrawPage() {
         Your gallery
       </p>
       <h2 className="text-3xl font-light text-stone-900 mb-4">
-        Your draw is ready.
+        Explore today&apos;s prompt.
       </h2>
       <p className="text-sm text-stone-400">
-        Card draw coming soon.
+        Coming soon.
       </p>
     </div>
   );
