@@ -8,7 +8,8 @@ export default async function QuizPage() {
   if (!userId) redirect('/sign-in');
 
   const rows = await sql`
-    SELECT clerk_id FROM user_profiles WHERE clerk_id = ${userId}
+    SELECT clerk_id FROM user_profiles
+    WHERE clerk_id = ${userId} AND cardinality(tags) > 0
   `;
 
   if (rows.length > 0) {
