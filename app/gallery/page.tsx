@@ -1,9 +1,8 @@
-import Link from 'next/link';
 import { auth } from '@clerk/nextjs/server';
-import { UserButton } from '@clerk/nextjs';
 import { redirect } from 'next/navigation';
 import { sql } from '@/lib/db';
 import { formatTag } from '@/lib/tags';
+import AuthHeader from '@/components/AuthHeader';
 
 const TONE_LABELS: Record<string, string> = {
   poetic: 'Poetic',
@@ -36,20 +35,7 @@ export default async function GalleryPage() {
 
   return (
     <div className="flex-1 flex flex-col">
-      <header className="flex justify-between items-center px-8 py-6">
-        <Link href="/" className="text-sm font-light text-stone-900 tracking-tight">
-          Gherkin
-        </Link>
-        <div className="flex items-center gap-6">
-          <Link
-            href="/explore"
-            className="text-sm text-stone-500 hover:text-stone-900 transition-colors"
-          >
-            Explore
-          </Link>
-          <UserButton />
-        </div>
-      </header>
+      <AuthHeader />
 
       <main className="flex-1 px-8 py-12 max-w-4xl mx-auto w-full">
         <div className="mb-12 flex items-end justify-between">

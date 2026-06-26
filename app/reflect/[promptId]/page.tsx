@@ -1,8 +1,7 @@
-import Link from 'next/link';
 import { auth } from '@clerk/nextjs/server';
-import { UserButton } from '@clerk/nextjs';
 import { redirect } from 'next/navigation';
 import { sql } from '@/lib/db';
+import AuthHeader from '@/components/AuthHeader';
 import ReflectionFlow from './_components/ReflectionFlow';
 
 export default async function ReflectPage({
@@ -26,18 +25,7 @@ export default async function ReflectPage({
 
   return (
     <div className="flex-1 flex flex-col">
-      <header className="flex justify-between items-center px-8 py-6">
-        <Link href="/explore" className="text-sm text-[#466353] hover:text-stone-700 transition-colors">
-          ← Explore
-        </Link>
-        <div className="flex items-center gap-6">
-          <Link href="/gallery" className="text-sm text-stone-500 hover:text-stone-900 transition-colors">
-            My gallery
-          </Link>
-          <UserButton />
-        </div>
-      </header>
-
+      <AuthHeader />
       <ReflectionFlow
         promptId={prompt.id as string}
         promptText={prompt.text as string}

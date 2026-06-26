@@ -1,6 +1,7 @@
 import { auth } from '@clerk/nextjs/server';
 import { redirect } from 'next/navigation';
 import { sql } from '@/lib/db';
+import AuthHeader from '@/components/AuthHeader';
 import PreferencesForm from './_components/PreferencesForm';
 
 export default async function PreferencesPage() {
@@ -13,8 +14,11 @@ export default async function PreferencesPage() {
   if (!profile) redirect('/quiz');
 
   return (
-    <div className="flex-1 flex flex-col items-center justify-center px-8 py-16">
-      <PreferencesForm currentTags={(profile.tags as string[]) ?? []} />
+    <div className="flex-1 flex flex-col">
+      <AuthHeader />
+      <div className="flex-1 flex items-center justify-center px-8 py-16">
+        <PreferencesForm currentTags={(profile.tags as string[]) ?? []} />
+      </div>
     </div>
   );
 }

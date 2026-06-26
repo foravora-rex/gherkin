@@ -1,8 +1,7 @@
-import Link from 'next/link';
 import { auth } from '@clerk/nextjs/server';
-import { UserButton } from '@clerk/nextjs';
 import { redirect } from 'next/navigation';
 import { getDrawForUser } from '@/lib/draw';
+import AuthHeader from '@/components/AuthHeader';
 import RefreshButton from './_components/RefreshButton';
 
 const CARD_LABELS: Record<string, string> = {
@@ -26,20 +25,7 @@ export default async function ExplorePage() {
 
   return (
     <div className="flex-1 flex flex-col">
-      <header className="flex justify-between items-center px-8 py-6">
-        <Link href="/" className="text-sm font-light text-stone-900 tracking-tight">
-          Gherkin
-        </Link>
-        <div className="flex items-center gap-6">
-          <Link
-            href="/gallery"
-            className="text-sm text-stone-500 hover:text-stone-900 transition-colors"
-          >
-            My gallery
-          </Link>
-          <UserButton />
-        </div>
-      </header>
+      <AuthHeader />
 
       <main className="flex-1 flex flex-col items-center justify-center px-8 py-12">
         <div className="w-full max-w-4xl">
