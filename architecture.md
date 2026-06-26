@@ -144,7 +144,7 @@ Anthropic does not offer an embedding API. Claude handles text generation; a sep
 
 **Embedding strategy:**
 - Prompts are embedded once at seed time. The embedding captures the full semantic meaning of the question (text + follow-up if present, concatenated).
-- User reflections are embedded at save time, immediately after the user confirms their rendered text.
+- User reflections are embedded at save time from the raw `transcript` (the user's own words), not the AI-rendered version. This keeps the semantic signal close to the user's voice.
 - The user profile embedding (constructed at draw time from tags + inner life + chapter) powers card curation via cosine distance against prompt embeddings.
 - Reflection embeddings are stored for future use — available for embedding-based pattern surfacing when corpus size warrants retrieval pre-filtering (see Section 12).
 
@@ -184,13 +184,15 @@ The card draw surfaces three prompts per session using vector similarity search 
 
 | Card | Label | Query logic |
 |---|---|---|
-| Known | "From your world" | `ORDER BY embedding <=> $profile ASC` — semantically closest prompt, any category, excluding answered prompts |
-| Adjacent | "Just beyond" | `ORDER BY embedding <=> $profile ASC` restricted to cultural categories *outside* the user's declared preferences — closest resonant prompt from unfamiliar territory |
-| Unexpected | "Something else" | `ORDER BY embedding <=> $profile DESC` from the `universal` category — most semantically *distant* from the user's profile |
+| Known | "From your world" | Fetch the 10 semantically closest prompts (any category, excluding answered), pick one at random |
+| Adjacent | "Just beyond" | Fetch the 10 closest prompts from cultural categories *outside* the user's declared preferences, pick one at random |
+| Unexpected | "Something else" | Fetch the 10 most semantically *distant* prompts from the `universal` category, pick one at random |
 
-5. Each card excludes all prompts from earlier in the same session.
+5. Each card excludes all prompts drawn earlier in the same session.
 
-**Why `universal` for the unexpected card:** Universal prompts (`"What do you do when you're afraid?"`) don't belong to any cultural domain — they are inherently outside a culturally-declared profile. Ordering by distance DESC within that pool ensures the most genuinely surprising result, not just a random one.
+**Why top-10 with random selection:** Picking deterministically from the single closest match means "Draw again" always returns the same card — nothing changes between refreshes. Sampling randomly within the top 10 preserves semantic quality (all candidates are genuinely relevant) while giving variety on each draw.
+
+**Why `universal` for the unexpected card:** Universal prompts (`"What do you do when you're afraid?"`) don't belong to any cultural domain — they are inherently outside a culturally-declared profile. Fetching the most distant within that pool ensures genuine surprise rather than a random universal question.
 
 **Why one embedding, not three:** The profile string is fixed for the session. Embedding it once and reusing the vector for all three queries saves two OpenAI calls compared to per-card embedding.
 
@@ -366,11 +368,13 @@ Neon encrypts all data at rest with AES-256. This is transparent — no applicat
 
 All AI routes are rate-limited per authenticated user using Upstash Redis with a sliding window algorithm. Sliding window means limits are rolling over any 24-hour period — fairer than a fixed midnight reset for users across time zones.
 
-| Route | Limit |
-|---|---|
-| Tone rendering (Claude) | 20 per user per 24h |
-| Pattern surfacing (Claude) | 5 per user per 24h |
-| Card draw | 50 per user per 24h |
+| Route | Limit | Applied |
+|---|---|---|
+| `POST /api/reflect/save` | 20 saves per user per 24h | ✓ `reflectionLimiter` |
+| `POST /api/patterns` | 5 requests per user per 24h | ✓ `patternLimiter` |
+| Card draw | 50 draws per user per 24h | ✗ `drawLimiter` defined but not yet wired to the explore page |
+
+Note: `drawLimiter` exists in `lib/ratelimit.ts` but is not currently applied. The `/explore` page is a Server Component — adding rate limiting there requires wiring it into the page or extracting the draw into an API route.
 
 Upstash was chosen over a Postgres counter because Redis is atomic under concurrent requests — two simultaneous calls cannot both pass the same rate limit check. A Postgres counter with a `SELECT` then `UPDATE` pattern has a race condition window that Redis eliminates. Upstash free tier (10,000 commands/day) is sufficient for demo scale.
 
