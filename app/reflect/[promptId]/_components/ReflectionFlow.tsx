@@ -164,7 +164,17 @@ export default function ReflectionFlow({ promptId, promptText, followUp, preferr
             </button>
           ))}
         </div>
-        <div className="flex justify-end">
+        <div className="flex items-center justify-between">
+          <button
+            onClick={() => {
+              setRenderedText(fullTranscript);
+              setSelectedTone('as-written');
+              setStep('result');
+            }}
+            className="text-sm text-stone-400 hover:text-stone-700 transition-colors"
+          >
+            Save as written
+          </button>
           <button
             onClick={handleRender}
             className="bg-[#85A16A] text-white px-8 py-3 rounded-full text-sm hover:opacity-90 transition-opacity"
@@ -188,15 +198,13 @@ export default function ReflectionFlow({ promptId, promptText, followUp, preferr
     return (
       <div className="max-w-2xl w-full mx-auto px-8 py-16">
         <p className="text-xs uppercase tracking-widest text-stone-300 mb-8">
-          {TONES.find((t) => t.id === selectedTone)?.label}
+          {selectedTone === 'as-written' ? 'As written' : TONES.find((t) => t.id === selectedTone)?.label}
         </p>
-        <div className="prose prose-stone prose-sm max-w-none mb-12">
-          {renderedText.split('\n\n').map((paragraph, i) => (
-            <p key={i} className="text-stone-700 leading-relaxed mb-4 font-light">
-              {paragraph}
-            </p>
-          ))}
-        </div>
+        <textarea
+          value={renderedText}
+          onChange={(e) => setRenderedText(e.target.value)}
+          className="w-full min-h-64 text-sm text-stone-700 bg-transparent border-b border-stone-200 focus:outline-none focus:border-[#85A16A] resize-none leading-relaxed transition-colors pb-2 mb-12"
+        />
         {error && <p className="text-sm text-red-400 mb-6">{error}</p>}
         <div className="flex items-center gap-6">
           <button
