@@ -1,5 +1,6 @@
 import { sql } from './db';
-import { ALL_GENRE_IDS, BROAD_TAGS } from './tags';
+import { generateEmbedding } from './embeddings';
+import { formatTag } from './tags';
 
 type Prompt = {
   id: string;
@@ -18,111 +19,94 @@ const BROAD_TO_CATEGORY: Record<string, string> = {
   'stories-words': 'stories-and-words',
 };
 
-async function pickPrompt(
-  excludeIds: string[],
-  genreTags?: string[],
-  categories?: string[]
-): Promise<Prompt | null> {
-  const hasExclusions = excludeIds.length > 0;
-
-  // Try genre-level match first (most precise)
-  if (genreTags && genreTags.length > 0) {
-    const rows = hasExclusions
-      ? await sql`
-          SELECT id, text, category, tags FROM prompts
-          WHERE tags && ${genreTags}::text[]
-          AND id != ALL(${excludeIds}::uuid[])
-          ORDER BY random() LIMIT 1
-        `
-      : await sql`
-          SELECT id, text, category, tags FROM prompts
-          WHERE tags && ${genreTags}::text[]
-          ORDER BY random() LIMIT 1
-        `;
-    if (rows[0]) return rows[0] as Prompt;
-  }
-
-  // Fall back to category-level match
-  if (categories && categories.length > 0) {
-    const rows = hasExclusions
-      ? await sql`
-          SELECT id, text, category, tags FROM prompts
-          WHERE category = ANY(${categories}::text[])
-          AND id != ALL(${excludeIds}::uuid[])
-          ORDER BY random() LIMIT 1
-        `
-      : await sql`
-          SELECT id, text, category, tags FROM prompts
-          WHERE category = ANY(${categories}::text[])
-          ORDER BY random() LIMIT 1
-        `;
-    if (rows[0]) return rows[0] as Prompt;
-  }
-
-  // Last resort: any unanswered prompt
-  const rows = hasExclusions
-    ? await sql`
-        SELECT id, text, category, tags FROM prompts
-        WHERE id != ALL(${excludeIds}::uuid[])
-        ORDER BY random() LIMIT 1
-      `
-    : await sql`
-        SELECT id, text, category, tags FROM prompts
-        ORDER BY random() LIMIT 1
-      `;
-  return (rows[0] as Prompt) ?? null;
+function buildProfileString(tags: string[], innerLife: string[], chapter: string | null): string {
+  const parts: string[] = [];
+  if (tags.length > 0) parts.push(`Interests: ${tags.map(formatTag).join(', ')}.`);
+  if (innerLife.length > 0) parts.push(`Inner life: ${innerLife.join(', ')}.`);
+  if (chapter) parts.push(`Chapter: ${chapter}.`);
+  return parts.join(' ') || 'Open to anything.';
 }
 
 export async function getDrawForUser(userId: string): Promise<DrawCard[]> {
   const profileRows = await sql`
-    SELECT tags FROM user_profiles WHERE clerk_id = ${userId}
+    SELECT tags, inner_life, chapter FROM user_profiles WHERE clerk_id = ${userId}
   `;
+
   const userTags = (profileRows[0]?.tags as string[]) ?? [];
+  const innerLife = (profileRows[0]?.inner_life as string[]) ?? [];
+  const chapter = (profileRows[0]?.chapter as string | null) ?? null;
 
   const answeredRows = await sql`
     SELECT prompt_id FROM reflections WHERE clerk_id = ${userId}
   `;
   const answeredIds = answeredRows.map((r) => r.prompt_id as string);
 
-  // Implicit learning: tags from prompts the user has already reflected on
-  const implicitRows = await sql`
-    SELECT DISTINCT unnest(p.tags) AS tag
-    FROM reflections r
-    JOIN prompts p ON p.id = r.prompt_id
-    WHERE r.clerk_id = ${userId}
-  `;
-  const implicitTags = implicitRows.map((r) => r.tag as string);
+  const profileString = buildProfileString(userTags, innerLife, chapter);
+  const profileEmbedding = await generateEmbedding(profileString);
+  const embeddingLiteral = `[${profileEmbedding.join(',')}]`;
 
-  // Separate broad interests from genre-level tags
-  const broadTags = userTags.filter((t) => BROAD_TAGS.includes(t));
-  const explicitGenreTags = userTags.filter((t) => ALL_GENRE_IDS.has(t));
-
-  // Combine explicit genre preferences with implicit signals
-  const knownGenreTags = [...new Set([...explicitGenreTags, ...implicitTags])];
-
-  // Derive preferred categories from broad tags
-  const preferredCategories = broadTags
+  // Categories outside the user's declared preferences, used for the adjacent card
+  const preferredCategories = userTags
     .map((t) => BROAD_TO_CATEGORY[t])
     .filter(Boolean) as string[];
-  const fallbackCategories =
-    preferredCategories.length > 0 ? preferredCategories : CULTURAL_CATEGORIES;
+  const adjacentCategories = CULTURAL_CATEGORIES.filter((c) => !preferredCategories.includes(c));
+  const adjacentPool = adjacentCategories.length > 0 ? adjacentCategories : CULTURAL_CATEGORIES;
 
-  // Adjacent: cultural categories NOT in the user's preferred set
-  const adjacentCategories = CULTURAL_CATEGORIES.filter(
-    (c) => !preferredCategories.includes(c)
-  );
-
-  const known = await pickPrompt(answeredIds, knownGenreTags, fallbackCategories);
+  // Known: semantically closest prompt across all categories
+  const knownRows =
+    answeredIds.length > 0
+      ? await sql`
+          SELECT id, text, category, tags FROM prompts
+          WHERE id != ALL(${answeredIds}::uuid[])
+          ORDER BY embedding <=> ${embeddingLiteral}::vector
+          LIMIT 1
+        `
+      : await sql`
+          SELECT id, text, category, tags FROM prompts
+          ORDER BY embedding <=> ${embeddingLiteral}::vector
+          LIMIT 1
+        `;
+  const known = (knownRows[0] as Prompt) ?? null;
 
   const excluded1 = [...answeredIds, ...(known ? [known.id] : [])];
-  const adjacent = await pickPrompt(
-    excluded1,
-    undefined,
-    adjacentCategories.length > 0 ? adjacentCategories : CULTURAL_CATEGORIES
-  );
+
+  // Adjacent: semantically closest prompt from cultural categories outside user's preferences
+  const adjacentRows =
+    excluded1.length > 0
+      ? await sql`
+          SELECT id, text, category, tags FROM prompts
+          WHERE category = ANY(${adjacentPool}::text[])
+          AND id != ALL(${excluded1}::uuid[])
+          ORDER BY embedding <=> ${embeddingLiteral}::vector
+          LIMIT 1
+        `
+      : await sql`
+          SELECT id, text, category, tags FROM prompts
+          WHERE category = ANY(${adjacentPool}::text[])
+          ORDER BY embedding <=> ${embeddingLiteral}::vector
+          LIMIT 1
+        `;
+  const adjacent = (adjacentRows[0] as Prompt) ?? null;
 
   const excluded2 = [...excluded1, ...(adjacent ? [adjacent.id] : [])];
-  const unexpected = await pickPrompt(excluded2, undefined, ['universal']);
+
+  // Unexpected: most semantically distant prompt from the universal category
+  const unexpectedRows =
+    excluded2.length > 0
+      ? await sql`
+          SELECT id, text, category, tags FROM prompts
+          WHERE category = 'universal'
+          AND id != ALL(${excluded2}::uuid[])
+          ORDER BY embedding <=> ${embeddingLiteral}::vector DESC
+          LIMIT 1
+        `
+      : await sql`
+          SELECT id, text, category, tags FROM prompts
+          WHERE category = 'universal'
+          ORDER BY embedding <=> ${embeddingLiteral}::vector DESC
+          LIMIT 1
+        `;
+  const unexpected = (unexpectedRows[0] as Prompt) ?? null;
 
   return [
     ...(known ? [{ ...known, type: 'known' as const }] : []),

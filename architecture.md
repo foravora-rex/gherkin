@@ -1,5 +1,6 @@
 # Gherkin — Architecture Design Document
-*Written by Rocky & Lucy — last updated 2026-06-26*
+*Written by Rocky & Lucy — last updated 2026-06-26*  
+*Draw architecture updated 2026-06-26: vector-based curation implemented*
 
 ---
 
@@ -144,7 +145,8 @@ Anthropic does not offer an embedding API. Claude handles text generation; a sep
 **Embedding strategy:**
 - Prompts are embedded once at seed time. The embedding captures the full semantic meaning of the question (text + follow-up if present, concatenated).
 - User reflections are embedded at save time, immediately after the user confirms their rendered text.
-- Embeddings on reflections power the deferred pattern surfacing feature (see Section 12).
+- The user profile embedding (constructed at draw time from tags + inner life + chapter) powers card curation via cosine distance against prompt embeddings.
+- Reflection embeddings are stored for future use — available for embedding-based pattern surfacing when corpus size warrants retrieval pre-filtering (see Section 12).
 
 ---
 
@@ -158,7 +160,7 @@ Claude is the right model for text that needs to feel genuinely human and emotio
 
 **Tasks handled by Claude:**
 1. **Tone rendering** — Takes the user's raw transcript and renders it in the chosen tone. The prompt is precise about each tone's characteristics.
-2. **Pattern surfacing** — Receives the top-N semantically similar reflections (retrieved via pgvector) and synthesises recurring themes. This is the RAG output step (deferred to post-demo).
+2. **Pattern surfacing** — Receives all of a user's saved reflections and synthesises 2–3 recurring themes, returned as structured JSON cards. See Section 12.
 
 **What Claude does not do:**
 - Claude does not converse. There is no chatbot. The AI is a quiet layer beneath the user experience — it renders, it observes. It does not interrupt.
@@ -167,44 +169,30 @@ Claude is the right model for text that needs to feel genuinely human and emotio
 
 ## 9. Card Draw Algorithm
 
-The card draw surfaces three prompts per session. This is not embedding-based retrieval — it is a tag-matching algorithm with a fallback chain and implicit learning layer.
+The card draw surfaces three prompts per session using vector similarity search against the user's semantic profile.
 
-### 9.1 Why Not Cosine Distance for the Draw
+### 9.1 Vector-Based Curation
 
-The original architecture planned cosine similarity between a user profile embedding and prompt embeddings. This was revisited and replaced with tag-based matching for two reasons:
+**The problem with tag matching:** Tag string overlap is brittle. A user who loves Dostoevsky and tagged themselves `literary-fiction` needs prompts about moral weight and inner conflict — not just prompts that happen to carry the same tag string. Semantic similarity captures that nuance; tag matching cannot.
 
-1. **Cold start is too visible.** For new users with few reflections, the profile embedding is thin and unrepresentative. Tag matching produces visibly better results immediately.
-2. **The taxonomy is the product.** The genre tags (`indie-alternative`, `literary-fiction`, `cinema`) are a carefully designed vocabulary. Using them directly as the retrieval signal means prompt curators can reason about coverage and gaps without needing to understand embedding geometry.
+**How it works (`lib/draw.ts`):**
 
-Cosine search remains available for pattern surfacing (Section 12), where it is the right tool: comparing a user's reflection embeddings to find recurring semantic clusters.
+1. Load the user's `tags`, `inner_life`, and `chapter` from `user_profiles`.
+2. Construct a profile string: `"Interests: Folk & Singer-Songwriter. Inner life: overthinker. Chapter: in transition."` — this is the semantic fingerprint of the user's declared self.
+3. Embed that string once using `text-embedding-3-small`. One OpenAI call per draw, one vector reused for all three cards.
+4. Query pgvector with different constraints per card type:
 
-### 9.2 Three-Tier Draw
-
-Each session produces three cards:
-
-| Card | Label | Source |
+| Card | Label | Query logic |
 |---|---|---|
-| Known | "From your world" | Prompts whose tags match the user's genre preferences |
-| Adjacent | "Just beyond" | Prompts from the same broad category (music, film, books) but different genre |
-| Unexpected | "Something else" | Prompts from the `universal` category — inner-life questions independent of taste |
+| Known | "From your world" | `ORDER BY embedding <=> $profile ASC` — semantically closest prompt, any category, excluding answered prompts |
+| Adjacent | "Just beyond" | `ORDER BY embedding <=> $profile ASC` restricted to cultural categories *outside* the user's declared preferences — closest resonant prompt from unfamiliar territory |
+| Unexpected | "Something else" | `ORDER BY embedding <=> $profile DESC` from the `universal` category — most semantically *distant* from the user's profile |
 
-**Selection logic** (implemented in `lib/draw.ts`):
+5. Each card excludes all prompts from earlier in the same session.
 
-```
-For each tier:
-  1. Filter out prompts the user has already answered (answered_ids)
-  2. Known: WHERE tags && knownGenreTags::text[] — array overlap
-  3. Adjacent fallback: WHERE category = ANY(broadCategories) (e.g., 'music', 'screen-stage')
-  4. Unexpected: WHERE category = 'universal'
-  5. Final fallback: any unanswered prompt
-  ORDER BY RANDOM() LIMIT 1
-```
+**Why `universal` for the unexpected card:** Universal prompts (`"What do you do when you're afraid?"`) don't belong to any cultural domain — they are inherently outside a culturally-declared profile. Ordering by distance DESC within that pool ensures the most genuinely surprising result, not just a random one.
 
-### 9.3 Implicit Learning
-
-Users declare genre preferences explicitly during onboarding and on the preferences page. But each reflection they save implies further preference signal: the tags of the prompts they engaged with deeply.
-
-At draw time, `getDrawForUser` also queries the user's reflection history and extracts the genre tags of those prompts. These *implicit tags* are merged with explicit profile tags before the known-card query runs. A user who never said they were into `comfort-tv` but has reflected on three comfort-TV prompts will receive more of them — no explicit update required.
+**Why one embedding, not three:** The profile string is fixed for the session. Embedding it once and reusing the vector for all three queries saves two OpenAI calls compared to per-card embedding.
 
 ---
 
@@ -255,7 +243,7 @@ text       TEXT                — The question
 follow_up  TEXT (nullable)     — Pre-written follow-up; non-null signals GOAT format
 category   TEXT                — Source library: 'music', 'screen-stage', 'universal', etc.
 tags       TEXT[]              — Genre tags: 'indie-alternative', 'literary-fiction', etc.
-embedding  vector(1536)        — OpenAI text-embedding-3-small (for pattern surfacing)
+embedding  vector(1536)        — OpenAI text-embedding-3-small (card draw curation)
 created_at TIMESTAMPTZ
 ```
 
@@ -289,30 +277,31 @@ Clerk generates this identifier. It is verified server-side on every request via
 ### Indexes
 
 ```sql
--- HNSW indexes for approximate nearest-neighbour search (pattern surfacing)
+-- HNSW indexes for approximate nearest-neighbour search
+-- prompts: card draw curation | reflections: future pattern surfacing upgrade
 CREATE INDEX ON prompts     USING hnsw (embedding vector_cosine_ops);
 CREATE INDEX ON reflections USING hnsw (embedding vector_cosine_ops);
-
--- GIN index for efficient array overlap queries (card draw)
-CREATE INDEX ON prompts USING gin (tags);
 ```
 
 ---
 
-## 12. RAG Architecture (Pattern Surfacing)
+## 12. Pattern Surfacing
 
-Pattern surfacing is deferred to post-demo but the infrastructure is fully in place.
+Pattern surfacing is live. Users access it from `/patterns` after saving at least 3 reflections.
 
-**How it will work:**
+**How it works (`app/api/patterns/route.ts`):**
 
-1. User triggers "See patterns" explicitly (minimum 3 reflections required).
-2. Retrieve all of the user's reflections with their embeddings.
-3. Run a clustering query: find groups of reflections whose embeddings are close to each other — these are the recurring themes.
-4. Pass the top clusters to Claude with a synthesis prompt: *"Here are reflections from a user across different questions. Identify the 2-3 recurring themes in how they think and what they care about. Be specific — name what you see."*
-5. Return Claude's synthesis to the user.
+1. User triggers "See patterns" explicitly.
+2. Retrieve all of the user's reflections — `prompt_text` + `rendered_text` for each.
+3. If fewer than 3 reflections exist, return a 422 and show a holding state. Below this threshold Claude cannot distinguish genuine patterns from over-interpreting a single response.
+4. Pass all reflection texts directly to Claude with a system prompt: identify 2–3 recurring themes, write each as a `{ theme, observation }` pair addressed in second person to the user. Be specific — quote their exact words.
+5. Claude returns structured JSON; the UI renders each pattern as a card.
+6. Rate limited to 5 requests per user per 24 hours (Upstash Redis).
 
-**Why the infrastructure is already there:**
-Every saved reflection generates an OpenAI embedding at save time (`lib/embeddings.ts`) and stores it in `reflections.embedding vector(1536)`. The HNSW index is built. When pattern surfacing ships, the retrieval step requires no schema changes.
+**Why direct synthesis rather than embedding clustering:**
+At demo scale (< ~50 reflections per user), sending all reflection texts directly to Claude produces higher-quality patterns than an embedding clustering step would. Clustering adds a round-trip to pgvector to pre-filter content that Claude could read in full in one pass. Direct synthesis is simpler, faster, and more accurate for small corpora.
+
+**Reflection embeddings are stored** at save time and indexed with HNSW. They are not used for pattern surfacing today but are available for a future upgrade where corpus size justifies retrieval-augmented pre-filtering.
 
 ---
 
@@ -395,7 +384,6 @@ Enforced by Vercel on all deployments. Required for Clerk auth and for the Web S
 
 | Feature | Status | Reason |
 |---|---|---|
-| Pattern surfacing | Infrastructure done, UI deferred | Requires ≥3 reflections to be meaningful; ship after user testing proves core loop |
 | Voice input (primary) | Web Speech API placeholder | Chrome/Edge only; acceptable for demo. Native iOS would be the production path. |
 | Scrapbook / visual mode | Post-MVP | Core hypothesis (do people reflect deeply?) must be validated before investing in the aesthetic layer |
 | Friend matching | Post-MVP | Requires user base; meaningless at demo scale |
