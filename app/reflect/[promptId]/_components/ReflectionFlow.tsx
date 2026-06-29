@@ -106,6 +106,8 @@ export default function ReflectionFlow({ promptId, promptText, followUp, preferr
     }
   }
 
+  const inputPlaceholder = isSupported === true ? 'Speak or write; take your time' : 'Write; take your time';
+
   if (step === 'answer') {
     return (
       <div className="max-w-2xl w-full mx-auto px-8 py-16">
@@ -124,7 +126,7 @@ export default function ReflectionFlow({ promptId, promptText, followUp, preferr
           autoFocus
           value={answer1}
           onChange={(e) => setAnswer1(e.target.value)}
-          placeholder="Write here…"
+          placeholder={inputPlaceholder}
           className="w-full min-h-48 text-sm text-stone-700 placeholder-stone-300 bg-transparent border-b border-stone-200 focus:outline-none focus:border-[#85A16A] resize-none leading-relaxed transition-colors pb-2"
         />
         {isListening && interimTranscript && (
@@ -180,7 +182,7 @@ export default function ReflectionFlow({ promptId, promptText, followUp, preferr
           autoFocus
           value={answer2}
           onChange={(e) => setAnswer2(e.target.value)}
-          placeholder="Write here…"
+          placeholder={inputPlaceholder}
           className="w-full min-h-48 text-sm text-stone-700 placeholder-stone-300 bg-transparent border-b border-stone-200 focus:outline-none focus:border-[#85A16A] resize-none leading-relaxed transition-colors pb-2"
         />
         {isListening && interimTranscript && (
