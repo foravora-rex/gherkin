@@ -19,12 +19,20 @@ const BROAD_TO_CATEGORY: Record<string, string> = {
   'stories-words': 'stories-and-words',
 };
 
-function buildProfileString(tags: string[], innerLife: string[], chapter: string | null): string {
+export function buildProfileString(tags: string[], innerLife: string[], chapter: string | null): string {
   const parts: string[] = [];
   if (tags.length > 0) parts.push(`Interests: ${tags.map(formatTag).join(', ')}.`);
   if (innerLife.length > 0) parts.push(`Inner life: ${innerLife.join(', ')}.`);
   if (chapter) parts.push(`Chapter: ${chapter}.`);
   return parts.join(' ') || 'Open to anything.';
+}
+
+export function buildAdjacentPool(userTags: string[]): string[] {
+  const preferredCategories = userTags
+    .map((t) => BROAD_TO_CATEGORY[t])
+    .filter(Boolean) as string[];
+  const adjacentCategories = CULTURAL_CATEGORIES.filter((c) => !preferredCategories.includes(c));
+  return adjacentCategories.length > 0 ? adjacentCategories : CULTURAL_CATEGORIES;
 }
 
 export async function getDrawForUser(userId: string): Promise<DrawCard[]> {
@@ -45,12 +53,7 @@ export async function getDrawForUser(userId: string): Promise<DrawCard[]> {
   const profileEmbedding = await generateEmbedding(profileString);
   const embeddingLiteral = `[${profileEmbedding.join(',')}]`;
 
-  // Categories outside the user's declared preferences, used for the adjacent card
-  const preferredCategories = userTags
-    .map((t) => BROAD_TO_CATEGORY[t])
-    .filter(Boolean) as string[];
-  const adjacentCategories = CULTURAL_CATEGORIES.filter((c) => !preferredCategories.includes(c));
-  const adjacentPool = adjacentCategories.length > 0 ? adjacentCategories : CULTURAL_CATEGORIES;
+  const adjacentPool = buildAdjacentPool(userTags);
 
   // Known: random pick from the 10 semantically closest prompts across all categories
   const knownRows =

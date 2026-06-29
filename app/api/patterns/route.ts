@@ -3,6 +3,7 @@ import { auth } from '@clerk/nextjs/server';
 import { NextResponse } from 'next/server';
 import { sql } from '@/lib/db';
 import { patternLimiter } from '@/lib/ratelimit';
+import { stripJsonFences } from '@/lib/json';
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -67,7 +68,7 @@ export async function POST() {
     .map((block) => block.text)
     .join('');
 
-  const json = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
+  const json = stripJsonFences(raw);
   const patterns: Pattern[] = JSON.parse(json);
 
   return NextResponse.json({ patterns, reflectionCount: rows.length });

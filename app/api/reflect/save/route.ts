@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { sql } from '@/lib/db';
 import { generateEmbedding } from '@/lib/embeddings';
 import { reflectionLimiter } from '@/lib/ratelimit';
+import { shouldPromoteTone } from '@/lib/tonePreference';
 
 export async function POST(request: Request) {
   const { userId } = await auth();
@@ -36,7 +37,7 @@ export async function POST(request: Request) {
   `;
   const toneCount = toneCountRows[0].count as number;
 
-  if (toneCount >= 3) {
+  if (shouldPromoteTone(toneCount)) {
     await sql`
       UPDATE user_profiles SET preferred_tone = ${tone} WHERE clerk_id = ${userId}
     `;
