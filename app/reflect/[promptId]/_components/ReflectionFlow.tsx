@@ -134,21 +134,28 @@ export default function ReflectionFlow({ promptId, promptText, followUp, preferr
         )}
         <div className="mt-8 flex items-center justify-between">
           {isSupported === true && (
-            <button
-              onClick={toggleListening}
-              aria-label={isListening ? 'Stop recording' : 'Start voice dictation'}
-              className={`relative flex items-center gap-2 px-5 py-3 rounded-full text-sm transition-all overflow-hidden ${
-                isListening
-                  ? `bg-[#85A16A] text-white${!isSpeaking ? ' animate-pulse' : ''}`
-                  : 'border border-[#85A16A] text-[#85A16A] hover:bg-[#85A16A]/8'
-              }`}
-            >
-              {isListening && isSpeaking && (
-                <span className="absolute -inset-0.5 rounded-full border border-[#85A16A]/50 animate-ping" />
+            <div className="relative group">
+              <button
+                onClick={toggleListening}
+                aria-label={isListening ? 'Stop recording' : 'Start voice dictation'}
+                className={`relative flex items-center gap-2 px-5 py-3 rounded-full text-sm transition-all overflow-hidden ${
+                  isListening
+                    ? `bg-[#85A16A] text-white${!isSpeaking ? ' animate-pulse' : ''}`
+                    : 'border border-[#85A16A] text-[#85A16A] hover:bg-[#85A16A]/8'
+                }`}
+              >
+                {isListening && isSpeaking && (
+                  <span className="absolute -inset-0.5 rounded-full border border-[#85A16A]/50 animate-ping" />
+                )}
+                <MicIcon />
+                <span className="relative">{isListening ? 'Listening…' : 'Speak'}</span>
+              </button>
+              {!isListening && (
+                <div className="absolute bottom-full left-0 mb-2 w-52 px-3 py-2 text-xs text-stone-500 bg-white border border-stone-200 rounded-lg shadow-sm opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                  Dictation follows your browser's language setting.
+                </div>
               )}
-              <MicIcon />
-              <span className="relative">{isListening ? 'Listening…' : 'Speak'}</span>
-            </button>
+            </div>
           )}
           {isSupported !== true && <span />}
           <button
@@ -189,21 +196,28 @@ export default function ReflectionFlow({ promptId, promptText, followUp, preferr
         )}
         <div className="mt-8 flex items-center justify-between">
           {isSupported === true && (
-            <button
-              onClick={toggleListening}
-              aria-label={isListening ? 'Stop recording' : 'Start voice dictation'}
-              className={`relative flex items-center gap-2 px-5 py-3 rounded-full text-sm transition-all overflow-hidden ${
-                isListening
-                  ? `bg-[#85A16A] text-white${!isSpeaking ? ' animate-pulse' : ''}`
-                  : 'border border-[#85A16A] text-[#85A16A] hover:bg-[#85A16A]/8'
-              }`}
-            >
-              {isListening && isSpeaking && (
-                <span className="absolute -inset-0.5 rounded-full border border-[#85A16A]/50 animate-ping" />
+            <div className="relative group">
+              <button
+                onClick={toggleListening}
+                aria-label={isListening ? 'Stop recording' : 'Start voice dictation'}
+                className={`relative flex items-center gap-2 px-5 py-3 rounded-full text-sm transition-all overflow-hidden ${
+                  isListening
+                    ? `bg-[#85A16A] text-white${!isSpeaking ? ' animate-pulse' : ''}`
+                    : 'border border-[#85A16A] text-[#85A16A] hover:bg-[#85A16A]/8'
+                }`}
+              >
+                {isListening && isSpeaking && (
+                  <span className="absolute -inset-0.5 rounded-full border border-[#85A16A]/50 animate-ping" />
+                )}
+                <MicIcon />
+                <span className="relative">{isListening ? 'Listening…' : 'Speak'}</span>
+              </button>
+              {!isListening && (
+                <div className="absolute bottom-full left-0 mb-2 w-52 px-3 py-2 text-xs text-stone-500 bg-white border border-stone-200 rounded-lg shadow-sm opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                  Dictation follows your browser's language setting.
+                </div>
               )}
-              <MicIcon />
-              <span className="relative">{isListening ? 'Listening…' : 'Speak'}</span>
-            </button>
+            </div>
           )}
           {isSupported !== true && <span />}
           <button
