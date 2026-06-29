@@ -20,7 +20,7 @@ export default function RefreshButton() {
     <button
       onClick={handleClick}
       disabled={isPending}
-      className="flex items-center gap-2 px-4 py-2 rounded-full border border-[#466353] text-[#466353] text-sm hover:bg-[#466353] hover:text-white transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+      className="flex items-center gap-2 px-4 py-2 rounded-full border border-[#85A16A] text-[#85A16A] text-sm hover:bg-[#85A16A]/8 transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
     >
       {isPending ? (
         <>
