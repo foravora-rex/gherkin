@@ -32,7 +32,7 @@ export default function BubbleField() {
   const [bubbles, setBubbles] = useState<Bubble[]>([]);
 
   useEffect(() => {
-    setBubbles(generateBubbles(26));
+    setBubbles(generateBubbles(60));
   }, []);
 
   return (
