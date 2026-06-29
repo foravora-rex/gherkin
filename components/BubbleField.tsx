@@ -23,7 +23,7 @@ function generateBubbles(count: number): Bubble[] {
     wobbleDuration: 3 + Math.random() * 4,
     riseDelay: -Math.random() * 18,
     wobbleDelay: -Math.random() * 5,
-    opacity: 0.11 + Math.random() * 0.13,
+    opacity: 0.20 + Math.random() * 0.18,
     driftLeft: Math.random() < 0.5,
   }));
 }
