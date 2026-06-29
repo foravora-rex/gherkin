@@ -17,7 +17,7 @@ export default async function Home() {
   }
 
   return (
-    <div className="relative flex-1 flex flex-col overflow-hidden">
+    <div className="relative isolate flex-1 flex flex-col overflow-hidden">
       <BubbleField />
       <header className="flex justify-end items-center px-8 py-6">
         <div className="flex gap-4">

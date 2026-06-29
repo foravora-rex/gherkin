@@ -31,7 +31,7 @@ export default async function ExplorePage() {
   const cards = isExhausted ? [] : await getDrawForUser(userId);
 
   return (
-    <div className="relative flex-1 flex flex-col overflow-hidden">
+    <div className="relative isolate flex-1 flex flex-col overflow-hidden">
       <BubbleField />
       <AuthHeader />
 
