@@ -5,7 +5,6 @@ import { drawLimiter } from '@/lib/ratelimit';
 import AuthHeader from '@/components/AuthHeader';
 import RefreshButton from './_components/RefreshButton';
 import ExploreCard from './_components/ExploreCard';
-import BubbleField from '@/components/BubbleField';
 
 const CARD_LABELS: Record<string, string> = {
   known: 'From your world',
@@ -31,8 +30,7 @@ export default async function ExplorePage() {
   const cards = isExhausted ? [] : await getDrawForUser(userId);
 
   return (
-    <div className="relative isolate flex-1 flex flex-col overflow-hidden">
-      <BubbleField />
+    <div className="flex-1 flex flex-col">
       <AuthHeader />
 
       <main className="flex-1 flex flex-col items-center justify-center px-8 py-12">

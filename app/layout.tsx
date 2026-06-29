@@ -4,6 +4,7 @@ import { ClerkProvider } from "@clerk/nextjs";
 import { Analytics } from "@vercel/analytics/next";
 import Footer from "@/components/Footer";
 import PostHogProvider from "@/components/PostHogProvider";
+import BubbleField from "@/components/BubbleField";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -25,9 +26,12 @@ export default function RootLayout({
     <ClerkProvider>
       <html lang="en" className={`${geistSans.variable} h-full antialiased`}>
         <body className="min-h-full flex flex-col bg-stone-50 text-stone-900">
-          <PostHogProvider>
-            {children}
-          </PostHogProvider>
+          <div className="relative isolate flex-1 flex flex-col">
+            <BubbleField />
+            <PostHogProvider>
+              {children}
+            </PostHogProvider>
+          </div>
           <Footer />
           <Analytics />
         </body>
