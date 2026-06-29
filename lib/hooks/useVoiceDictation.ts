@@ -42,7 +42,6 @@ export function useVoiceDictation({ onFinalTranscript }: Options): VoiceDictatio
     const recognition: any = new SpeechRecognitionClass();
     recognition.continuous = true;
     recognition.interimResults = true;
-    recognition.lang = navigator.language;
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     recognition.onresult = (event: any) => {

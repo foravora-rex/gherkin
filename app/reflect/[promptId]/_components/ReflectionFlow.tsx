@@ -152,7 +152,7 @@ export default function ReflectionFlow({ promptId, promptText, followUp, preferr
               </button>
               {!isListening && (
                 <div className="absolute bottom-full left-0 mb-2 w-52 px-3 py-2 text-xs text-stone-500 bg-white border border-stone-200 rounded-lg shadow-sm opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                  Dictation follows your browser's language setting.
+                  Dictation follows your browser's display language.
                 </div>
               )}
             </div>
@@ -214,7 +214,7 @@ export default function ReflectionFlow({ promptId, promptText, followUp, preferr
               </button>
               {!isListening && (
                 <div className="absolute bottom-full left-0 mb-2 w-52 px-3 py-2 text-xs text-stone-500 bg-white border border-stone-200 rounded-lg shadow-sm opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                  Dictation follows your browser's language setting.
+                  Dictation follows your browser's display language.
                 </div>
               )}
             </div>
