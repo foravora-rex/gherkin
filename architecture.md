@@ -1,7 +1,9 @@
 # Gherkin — Architecture Design Document
 *Written by Rocky & Lucy — last updated 2026-06-29*  
 *Draw architecture updated 2026-06-26: vector-based curation implemented*  
-*Voice dictation added 2026-06-29: Web Speech API, explicit stop control*
+*Voice dictation added 2026-06-29: Web Speech API, explicit stop control*  
+*Pattern surfacing prompt deepened 2026-06-29: scientific grounding, temperature 0.4*  
+*Bubble animation added 2026-06-29: lactofermentation branding, fixed viewport layer*
 
 ---
 
@@ -297,9 +299,10 @@ Pattern surfacing is live. Users access it from `/patterns` after saving at leas
 1. User triggers "See patterns" explicitly.
 2. Retrieve all of the user's reflections — `prompt_text` + `rendered_text` for each.
 3. If fewer than 3 reflections exist, return a 422 and show a holding state. Below this threshold Claude cannot distinguish genuine patterns from over-interpreting a single response.
-4. Pass all reflection texts directly to Claude with a system prompt: identify 2–3 recurring themes, write each as a `{ theme, observation }` pair addressed in second person to the user. Be specific — quote their exact words.
-5. Claude returns structured JSON; the UI renders each pattern as a card.
-6. Rate limited to 5 requests per user per 24 hours (Upstash Redis).
+4. Pass all reflection texts directly to Claude. The system prompt instructs Claude to identify 2–3 recurring patterns grounded in established frameworks from psychology, philosophy, or the social sciences — named naturally within the observation, not appended as citations. Patterns are framed as tendencies ("you tend to...") not fixed traits, weighted toward observations that recur across different topics, and each closes with an open question rather than a conclusion. Pseudosciences are explicitly excluded.
+5. Claude returns structured JSON (`{ theme, observation }[]`); the UI renders each pattern as a card.
+6. Temperature is set to **0.4** — lower than the default (1.0) for consistent analytical synthesis. Tone rendering stays at default since creativity is the point there.
+7. Rate limited to 5 requests per user per 24 hours (Upstash Redis).
 
 **Why direct synthesis rather than embedding clustering:**
 At demo scale (< ~50 reflections per user), sending all reflection texts directly to Claude produces higher-quality patterns than an embedding clustering step would. Clustering adds a round-trip to pgvector to pre-filter content that Claude could read in full in one pass. Direct synthesis is simpler, faster, and more accurate for small corpora.
@@ -308,7 +311,29 @@ At demo scale (< ~50 reflections per user), sending all reflection texts directl
 
 ---
 
-## 13. Analytics
+## 13. Bubble Animation
+
+**Decision:** CSS-only ambient bubble animation as a branding layer on all pages.
+
+**Reasoning:**
+
+The product name and philosophy — a gherkin is a cucumber that went through lactofermentation — needed a visual expression beyond the name itself. Lactofermentation produces small, organic, rising CO₂ bubbles. These became the ambient background animation: subtle, alive, always present.
+
+**Implementation (`components/BubbleField.tsx`, `app/globals.css`):**
+
+- 60 bubble elements generated on mount with randomised position, size (2–9px, weighted small), rise speed (11–24s), wobble speed (3–7s), and delay — negative delays ensure bubbles are already mid-rise on load
+- Two rise keyframes (`bubble-rise`, `bubble-rise-l`) with opposing horizontal drift for organic path variation; one wobble keyframe (`bubble-wobble`) that morphs `border-radius` independently, creating the irregular "frizzy" shape
+- Colour: sage green (`#85A16A`) at 20–38% opacity — background decoration, not foreground
+- `position: fixed` — covers exactly the viewport at all scroll depths, regardless of page height. An `absolute` approach was tried first but failed on long pages (gallery, patterns) where bubbles started below the visible area
+- Layering: BubbleField at `z-index: 0` (fixed); layout wrapper at `z-index: 1` (relative) — all page content sits above the bubbles in every stacking context
+- Mounted once in `app/layout.tsx` — applies to all routes automatically, no per-page wiring
+- No dependencies added — pure CSS animations are GPU-accelerated
+
+**Trade-off acknowledged:** 60 animated elements add minor GPU work on low-end devices. At this opacity and size the cost is negligible in practice; if performance issues emerge on older hardware, the count is a single constant in `BubbleField.tsx`.
+
+---
+
+## 14. Analytics
 
 **Decision:** Vercel Analytics + PostHog, over Google Analytics.
 
@@ -341,7 +366,7 @@ At demo scale (< ~50 reflections per user), sending all reflection texts directl
 
 ---
 
-## 14. Security
+## 15. Security
 
 ### Access Control: Application-Level Auth via Clerk (Demo)
 
@@ -385,7 +410,7 @@ Enforced by Vercel on all deployments. Required for Clerk auth and for the Web S
 
 ---
 
-## 15. What Is Deferred
+## 16. What Is Deferred
 
 | Feature | Status | Reason |
 |---|---|---|
@@ -399,7 +424,7 @@ Enforced by Vercel on all deployments. Required for Clerk auth and for the Web S
 
 ---
 
-## 16. Cost Summary (Demo Phase)
+## 17. Cost Summary (Demo Phase)
 
 | Service | Cost |
 |---|---|
@@ -417,4 +442,4 @@ Total variable cost per active user per session: **~$0.003**. Negligible at demo
 
 ---
 
-*Architecture by Rocky & Lucy — Gherkin, 2026*
+*Architecture by Rocky & Lucy — Gherkin, 2026. Last updated 2026-06-29.*
