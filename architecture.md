@@ -1,6 +1,7 @@
 # Gherkin — Architecture Design Document
-*Written by Rocky & Lucy — last updated 2026-06-26*  
-*Draw architecture updated 2026-06-26: vector-based curation implemented*
+*Written by Rocky & Lucy — last updated 2026-06-29*  
+*Draw architecture updated 2026-06-26: vector-based curation implemented*  
+*Voice dictation added 2026-06-29: Web Speech API, explicit stop control*
 
 ---
 
@@ -388,7 +389,7 @@ Enforced by Vercel on all deployments. Required for Clerk auth and for the Web S
 
 | Feature | Status | Reason |
 |---|---|---|
-| Voice input (primary) | Web Speech API placeholder | Chrome/Edge only; acceptable for demo. Native iOS would be the production path. |
+| Voice input (primary) | ✅ Shipped (2026-06-29) | Web Speech API in `lib/hooks/useVoiceDictation.ts`. Explicit stop control — silence never ends recording, user taps to finish. Binary animation: pulsing while waiting, radiating ring while speech is detected. Unsupported browsers (Firefox, Safari) see a banner directing to Chrome/Edge. Native iOS (`SFSpeechRecognizer`) remains the production path. |
 | Scrapbook / visual mode | Post-MVP | Core hypothesis (do people reflect deeply?) must be validated before investing in the aesthetic layer |
 | Friend matching | Post-MVP | Requires user base; meaningless at demo scale |
 | Shareable card export | Nice-to-have | Core loop validated first |
