@@ -36,11 +36,11 @@ export default function BubbleField() {
   }, []);
 
   return (
-    <div className="fixed inset-0 overflow-hidden pointer-events-none -z-10" aria-hidden="true">
+    <div className="absolute inset-0 overflow-hidden pointer-events-none -z-10" aria-hidden="true">
       {bubbles.map((bubble) => (
         <div
           key={bubble.id}
-          style={{ position: 'absolute', left: `${bubble.left}%`, bottom: '-10px', opacity: bubble.opacity }}
+          style={{ position: 'absolute', left: `${bubble.left}%`, top: 'calc(100vh + 10px)', opacity: bubble.opacity }}
         >
           <div
             style={{
