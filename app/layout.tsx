@@ -26,7 +26,7 @@ export default function RootLayout({
     <ClerkProvider>
       <html lang="en" className={`${geistSans.variable} h-full antialiased`}>
         <body className="min-h-full flex flex-col bg-stone-50 text-stone-900">
-          <div className="relative z-[1] flex-1 flex flex-col">
+          <div className="relative isolate flex-1 flex flex-col">
             <BubbleField />
             <PostHogProvider>
               {children}
