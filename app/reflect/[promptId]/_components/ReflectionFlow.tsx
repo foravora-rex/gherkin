@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { usePostHog } from 'posthog-js/react';
+import { useVoiceDictation } from '@/lib/hooks/useVoiceDictation';
 
 type Step = 'answer' | 'follow-up' | 'tone' | 'rendering' | 'result';
 
@@ -20,10 +21,32 @@ const TONES = [
   { id: 'unfiltered', label: 'Unfiltered', description: 'Raw and honest' },
 ];
 
+function MicIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
+      <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+      <line x1="12" y1="19" x2="12" y2="23" />
+      <line x1="8" y1="23" x2="16" y2="23" />
+    </svg>
+  );
+}
+
 export default function ReflectionFlow({ promptId, promptText, followUp, preferredTone }: Props) {
   const router = useRouter();
   const posthog = usePostHog();
   const [step, setStep] = useState<Step>('answer');
+
+  function handleFinalTranscript(text: string) {
+    if (step === 'answer') {
+      setAnswer1((prev) => (prev ? prev + ' ' : '') + text);
+    } else if (step === 'follow-up') {
+      setAnswer2((prev) => (prev ? prev + ' ' : '') + text);
+    }
+  }
+
+  const { isSupported, isListening, isSpeaking, interimTranscript, toggleListening, stopListening } =
+    useVoiceDictation({ onFinalTranscript: handleFinalTranscript });
   const [answer1, setAnswer1] = useState('');
   const [answer2, setAnswer2] = useState('');
   const [selectedTone, setSelectedTone] = useState(preferredTone ?? 'unfiltered');
@@ -86,6 +109,13 @@ export default function ReflectionFlow({ promptId, promptText, followUp, preferr
   if (step === 'answer') {
     return (
       <div className="max-w-2xl w-full mx-auto px-8 py-16">
+        {isSupported === false && (
+          <div className="mb-8 px-4 py-3 rounded-xl bg-stone-100 border border-stone-200 text-xs text-stone-500 leading-relaxed">
+            Voice-to-text — speak your reflection instead of typing — is available in{' '}
+            <span className="text-stone-700 font-medium">Chrome</span> and{' '}
+            <span className="text-stone-700 font-medium">Edge</span>. Open Gherkin there for the full experience.
+          </div>
+        )}
         <p className="text-xs uppercase tracking-widest text-[#466353] mb-8">Reflect</p>
         <p className="text-xl font-light text-stone-800 leading-relaxed mb-10">
           {promptText}
@@ -97,9 +127,34 @@ export default function ReflectionFlow({ promptId, promptText, followUp, preferr
           placeholder="Write here…"
           className="w-full min-h-48 text-sm text-stone-700 placeholder-stone-300 bg-transparent border-b border-stone-200 focus:outline-none focus:border-[#85A16A] resize-none leading-relaxed transition-colors pb-2"
         />
-        <div className="mt-8 flex justify-end">
+        {isListening && interimTranscript && (
+          <p className="mt-2 text-xs text-stone-400 italic">{interimTranscript}</p>
+        )}
+        <div className="mt-8 flex items-center justify-between">
+          {isSupported === true && (
+            <button
+              onClick={toggleListening}
+              aria-label={isListening ? 'Stop recording' : 'Start recording'}
+              className={`relative flex items-center justify-center w-10 h-10 rounded-full transition-colors ${
+                isListening ? 'text-[#85A16A]' : 'text-stone-300 hover:text-stone-400'
+              }`}
+            >
+              {isListening && (
+                <span
+                  className={`absolute inset-0 rounded-full bg-[#85A16A]/20 ${
+                    isSpeaking ? 'animate-ping' : 'animate-pulse'
+                  }`}
+                />
+              )}
+              <MicIcon />
+            </button>
+          )}
+          {isSupported !== true && <span />}
           <button
-            onClick={() => setStep(followUp ? 'follow-up' : 'tone')}
+            onClick={() => {
+              stopListening();
+              setStep(followUp ? 'follow-up' : 'tone');
+            }}
             disabled={answer1.trim().length < 10}
             className={`px-8 py-3 rounded-full text-sm transition-all ${
               answer1.trim().length >= 10
@@ -128,9 +183,34 @@ export default function ReflectionFlow({ promptId, promptText, followUp, preferr
           placeholder="Write here…"
           className="w-full min-h-48 text-sm text-stone-700 placeholder-stone-300 bg-transparent border-b border-stone-200 focus:outline-none focus:border-[#85A16A] resize-none leading-relaxed transition-colors pb-2"
         />
-        <div className="mt-8 flex justify-end">
+        {isListening && interimTranscript && (
+          <p className="mt-2 text-xs text-stone-400 italic">{interimTranscript}</p>
+        )}
+        <div className="mt-8 flex items-center justify-between">
+          {isSupported === true && (
+            <button
+              onClick={toggleListening}
+              aria-label={isListening ? 'Stop recording' : 'Start recording'}
+              className={`relative flex items-center justify-center w-10 h-10 rounded-full transition-colors ${
+                isListening ? 'text-[#85A16A]' : 'text-stone-300 hover:text-stone-400'
+              }`}
+            >
+              {isListening && (
+                <span
+                  className={`absolute inset-0 rounded-full bg-[#85A16A]/20 ${
+                    isSpeaking ? 'animate-ping' : 'animate-pulse'
+                  }`}
+                />
+              )}
+              <MicIcon />
+            </button>
+          )}
+          {isSupported !== true && <span />}
           <button
-            onClick={() => setStep('tone')}
+            onClick={() => {
+              stopListening();
+              setStep('tone');
+            }}
             disabled={answer2.trim().length < 5}
             className={`px-8 py-3 rounded-full text-sm transition-all ${
               answer2.trim().length >= 5
