@@ -1,8 +1,8 @@
-import Link from "next/link";
 import { SignInButton, SignUpButton } from "@clerk/nextjs";
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { sql } from "@/lib/db";
+import BubbleField from "@/components/BubbleField";
 
 export default async function Home() {
   const { userId } = await auth();
@@ -17,7 +17,8 @@ export default async function Home() {
   }
 
   return (
-    <div className="flex-1 flex flex-col">
+    <div className="relative flex-1 flex flex-col overflow-hidden">
+      <BubbleField />
       <header className="flex justify-end items-center px-8 py-6">
         <div className="flex gap-4">
           <SignInButton>

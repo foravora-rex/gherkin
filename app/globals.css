@@ -19,3 +19,26 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+@keyframes bubble-rise {
+  0%   { transform: translateY(0) translateX(0);     opacity: 0; }
+  8%   { opacity: 1; }
+  50%  { transform: translateY(-50vh) translateX(7px); }
+  92%  { opacity: 1; }
+  100% { transform: translateY(-108vh) translateX(0px); opacity: 0; }
+}
+
+@keyframes bubble-rise-l {
+  0%   { transform: translateY(0) translateX(0);      opacity: 0; }
+  8%   { opacity: 1; }
+  50%  { transform: translateY(-50vh) translateX(-7px); }
+  92%  { opacity: 1; }
+  100% { transform: translateY(-108vh) translateX(0px);  opacity: 0; }
+}
+
+@keyframes bubble-wobble {
+  0%,  100% { border-radius: 50% 50% 50% 50% / 50% 50% 50% 50%; }
+  25%        { border-radius: 45% 55% 52% 48% / 48% 52% 55% 45%; }
+  50%        { border-radius: 55% 45% 48% 52% / 52% 48% 45% 55%; }
+  75%        { border-radius: 48% 52% 55% 45% / 45% 55% 52% 48%; }
+}
