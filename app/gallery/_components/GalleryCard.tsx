@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { formatTag } from '@/lib/tags';
 import ImageSearch from '@/app/reflect/[promptId]/_components/ImageSearch';
@@ -13,6 +13,59 @@ const TONE_LABELS: Record<string, string> = {
   unfiltered: 'Unfiltered',
   'as-written': 'As written',
 };
+
+function FocalPointPicker({ image, onChange }: { image: ImageResult; onChange: (img: ImageResult) => void }) {
+  const dragStart = useRef<{ x: number; y: number; focalX: number; focalY: number } | null>(null);
+
+  function onPointerDown(e: React.PointerEvent<HTMLDivElement>) {
+    e.currentTarget.setPointerCapture(e.pointerId);
+    dragStart.current = {
+      x: e.clientX,
+      y: e.clientY,
+      focalX: image.focalX ?? 50,
+      focalY: image.focalY ?? 50,
+    };
+  }
+
+  function onPointerMove(e: React.PointerEvent<HTMLDivElement>) {
+    if (!dragStart.current) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const dx = ((e.clientX - dragStart.current.x) / rect.width) * 100;
+    const dy = ((e.clientY - dragStart.current.y) / rect.height) * 100;
+    const focalX = Math.round(Math.min(100, Math.max(0, dragStart.current.focalX - dx)));
+    const focalY = Math.round(Math.min(100, Math.max(0, dragStart.current.focalY - dy)));
+    onChange({ ...image, focalX, focalY });
+  }
+
+  function onPointerUp() {
+    dragStart.current = null;
+  }
+
+  return (
+    <div className="mt-4">
+      <p className="text-[10px] text-stone-400 mb-2">Drag to reposition</p>
+      <div
+        className="relative w-full h-32 overflow-hidden rounded-lg cursor-grab active:cursor-grabbing select-none"
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerCancel={onPointerUp}
+      >
+        <img
+          src={image.url}
+          alt={image.label}
+          draggable={false}
+          className="w-full h-full object-cover pointer-events-none"
+          style={{ objectPosition: `${image.focalX ?? 50}% ${image.focalY ?? 50}%` }}
+        />
+        <div
+          className="absolute w-3.5 h-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white shadow-md pointer-events-none"
+          style={{ left: `${image.focalX ?? 50}%`, top: `${image.focalY ?? 50}%` }}
+        />
+      </div>
+    </div>
+  );
+}
 
 type Props = {
   id: string;
@@ -95,32 +148,7 @@ export default function GalleryCard({ id, promptText, renderedText, tone, create
             </p>
             <ImageSearch selected={editImage} onSelect={setEditImage} />
             {editImage && (
-              <div className="mt-4">
-                <p className="text-[10px] text-stone-400 mb-2">Click to set focal point</p>
-                <div
-                  className="relative w-full h-32 overflow-hidden rounded-lg cursor-crosshair"
-                  onClick={(e) => {
-                    const rect = e.currentTarget.getBoundingClientRect();
-                    const x = Math.round(((e.clientX - rect.left) / rect.width) * 100);
-                    const y = Math.round(((e.clientY - rect.top) / rect.height) * 100);
-                    setEditImage({ ...editImage, focalX: x, focalY: y });
-                  }}
-                >
-                  <img
-                    src={editImage.url}
-                    alt={editImage.label}
-                    className="w-full h-full object-cover pointer-events-none"
-                    style={{ objectPosition: `${editImage.focalX ?? 50}% ${editImage.focalY ?? 50}%` }}
-                  />
-                  <div
-                    className="absolute w-3.5 h-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white shadow-md pointer-events-none"
-                    style={{
-                      left: `${editImage.focalX ?? 50}%`,
-                      top: `${editImage.focalY ?? 50}%`,
-                    }}
-                  />
-                </div>
-              </div>
+              <FocalPointPicker image={editImage} onChange={setEditImage} />
             )}
           </div>
           <div className="flex items-center gap-4 mt-6">
