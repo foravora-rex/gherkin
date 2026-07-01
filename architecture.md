@@ -1,9 +1,10 @@
 # Gherkin — Architecture Design Document
-*Written by Rocky & Lucy — last updated 2026-06-29*  
+*Written by Rocky & Lucy — last updated 2026-07-01*  
 *Draw architecture updated 2026-06-26: vector-based curation implemented*  
 *Voice dictation added 2026-06-29: Web Speech API, explicit stop control*  
 *Pattern surfacing prompt deepened 2026-06-29: scientific grounding, temperature 0.4*  
-*Bubble animation added 2026-06-29: lactofermentation branding, fixed viewport layer*
+*Bubble animation added 2026-06-29: lactofermentation branding, fixed viewport layer*  
+*Pattern result caching added 2026-07-01: content fingerprint, Redis cache, rate limit bypass on hit*
 
 ---
 
@@ -309,6 +310,21 @@ At demo scale (< ~50 reflections per user), sending all reflection texts directl
 
 **Reflection embeddings are stored** at save time and indexed with HNSW. They are not used for pattern surfacing today but are available for a future upgrade where corpus size justifies retrieval-augmented pre-filtering.
 
+### 12.1 Pattern Result Caching
+
+Claude is only called when the user's reflections have actually changed since the last synthesis. On every request the server computes a content fingerprint — SHA-256 of all `rendered_text` values joined in creation order, truncated to 16 hex characters — and compares it against what is stored in Redis alongside the last result.
+
+**Cache hit:** fingerprints match → return stored patterns immediately. No Claude call, no rate limit token consumed. Cost: one Redis read.
+
+**Cache miss:** fingerprints differ (reflection added, edited, or deleted) → call Claude, store the new result and fingerprint in Redis (90-day TTL), consume one rate limit token.
+
+**Explicit regeneration:** "See it differently →" passes `?force=true` → skip fingerprint check entirely, always call Claude, always update the cache. This is the only path a user can take to get a fresh synthesis without changing their reflections.
+
+**Why a content hash rather than a timestamp column:**
+The reflections table has `created_at` but no `updated_at`. Adding `updated_at` would require a schema migration and updating the PATCH handler. A SHA-256 of `rendered_text` values catches all changes — additions, deletions, and edits — without any schema change, and the data is already fetched for the Claude call anyway. The fingerprint is computed in-process; no extra database round-trip.
+
+**Rate limit behaviour:** the `patternLimiter` check is positioned after the cache lookup. Cache hits never reach the rate limiter — they are free in every sense.
+
 ---
 
 ## 13. Bubble Animation
@@ -325,7 +341,7 @@ The product name and philosophy — a gherkin is a cucumber that went through la
 - Two rise keyframes (`bubble-rise`, `bubble-rise-l`) with opposing horizontal drift for organic path variation; one wobble keyframe (`bubble-wobble`) that morphs `border-radius` independently, creating the irregular "frizzy" shape
 - Colour: sage green (`#85A16A`) at 20–38% opacity — background decoration, not foreground
 - `position: fixed` — covers exactly the viewport at all scroll depths, regardless of page height. An `absolute` approach was tried first but failed on long pages (gallery, patterns) where bubbles started below the visible area
-- Layering: BubbleField at `z-index: 0` (fixed); layout wrapper at `z-index: 1` (relative) — all page content sits above the bubbles in every stacking context
+- Layering: BubbleField at `z-index: -1` (inline style, not Tailwind) with no ancestor stacking context. In the root stacking context paint order: body background (step 1) → BubbleField (step 2, negative z-index) → all page content (steps 3+). The layout wrapper carries no `position`, `z-index`, or `isolation` — any of those would create an intermediate stacking context that traps the fixed element and breaks the layering
 - Mounted once in `app/layout.tsx` — applies to all routes automatically, no per-page wiring
 - No dependencies added — pure CSS animations are GPU-accelerated
 
@@ -435,11 +451,11 @@ Enforced by Vercel on all deployments. Required for Clerk auth and for the Web S
 | Upstash Redis (rate limiting) | $0 — free tier (10K commands/day) |
 | OpenAI embeddings | ~$0.00002 per prompt (one-time seed cost) |
 | Claude API (tone rendering) | ~$0.003 per reflection |
-| Claude API (pattern surfacing) | ~$0.005 per synthesis (deferred) |
+| Claude API (pattern surfacing) | ~$0.005 per synthesis; $0 on cache hit (same reflections) |
 | PostHog (product analytics) | $0 — free up to 1M events/month |
 
 Total variable cost per active user per session: **~$0.003**. Negligible at demo scale.
 
 ---
 
-*Architecture by Rocky & Lucy — Gherkin, 2026. Last updated 2026-06-29.*
+*Architecture by Rocky & Lucy — Gherkin, 2026. Last updated 2026-07-01.*
