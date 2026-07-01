@@ -6,6 +6,7 @@
 *Bubble animation added 2026-06-29: lactofermentation branding, fixed viewport layer*  
 *Pattern result caching added 2026-07-01: content fingerprint, Redis cache, rate limit bypass on hit*
 *Image attachment added 2026-07-01: TMDB, Spotify, AniList, Unsplash; drag-to-reposition focal point picker*
+*Testing added 2026-07-01: node:test, 14 assertions, GitHub Actions CI, pre-push hook*
 
 ---
 
@@ -479,7 +480,54 @@ Enforced by Vercel on all deployments. Required for Clerk auth and for the Web S
 
 ---
 
-## 17. What Is Deferred
+## 17. Testing
+
+### 17.1 Philosophy
+
+The codebase has no UI component tests and no API route tests. This is deliberate. At demo scale, the cost of mocking infrastructure (database, Redis, Clerk, Next.js server internals) outweighs the benefit. What does get tested is the pure logic layer — functions that take a value in and return a value out, with no external dependencies. These are the functions that break silently under refactoring and produce wrong output that is hard to notice in the UI.
+
+### 17.2 Test Runner: `node:test`
+
+**Decision:** Node's built-in `node:test` module, over Jest or Vitest.
+
+**Reasoning:**
+
+- Zero install — `node:test` ships with Node 18+. No package to add, no version to maintain.
+- Sufficient for the target: pure functions with no framework dependencies.
+- API is nearly identical to Jest/Vitest — migration is a ten-minute switch if the test suite grows to need mocking infrastructure or component rendering.
+
+`tsx` (already a dev dependency for scripts) is used as the TypeScript loader: `node --import tsx --test tests/*.test.ts`. No additional tooling required.
+
+### 17.3 What Is Tested
+
+Three functions, chosen because they are pure logic on critical paths that would fail silently:
+
+| Function | File | Why it matters |
+|---|---|---|
+| `buildFingerprint` | `lib/fingerprint.ts` | Drives pattern cache invalidation. A silent bug here means users see stale patterns indefinitely. |
+| `buildProfileString` | `lib/profile.ts` | Shapes every card draw via embedding. Wrong output degrades the whole algorithm without any visible error. |
+| `formatTag` | `lib/tags.ts` | Displayed everywhere — gallery cards, preferences page, pattern surface. Wrong output is immediately visible to users. |
+
+**Coverage:** 14 assertions across 3 test files. Run with `npm test`.
+
+**What is not tested:** API routes (require mocking Clerk, Redis, Neon), React components (require a browser environment or jsdom), the draw algorithm (tightly coupled to the database). These are candidates for future test coverage if the project moves toward production.
+
+### 17.4 Refactoring for Testability
+
+Two functions were extracted from files that had heavy external dependencies, purely to make them importable in tests without side effects:
+
+- `buildFingerprint` moved from `app/api/patterns/route.ts` → `lib/fingerprint.ts`. The route handler now imports it. This also improves the route file — pure logic does not belong in a handler.
+- `buildProfileString` moved from `lib/draw.ts` → `lib/profile.ts`. `draw.ts` re-exports it so nothing in the rest of the codebase required changes.
+
+### 17.5 CI and Local Enforcement
+
+**GitHub Actions** (`.github/workflows/test.yml`) — runs `npm test` on every push to every branch. A failing test produces a red ✗ on the commit in GitHub and triggers an email notification. Uses Node 20 LTS and `npm ci` for reproducible installs.
+
+**Pre-push hook** (`.git/hooks/pre-push`) — runs `npm test` locally before every `git push`. If tests fail, the push is blocked. The hook is not tracked by git; `scripts/setup-hooks.sh` recreates it after a fresh clone.
+
+---
+
+## 18. What Is Deferred
 
 | Feature | Status | Reason |
 |---|---|---|
@@ -493,7 +541,7 @@ Enforced by Vercel on all deployments. Required for Clerk auth and for the Web S
 
 ---
 
-## 18. Cost Summary (Demo Phase)
+## 19. Cost Summary (Demo Phase)
 
 | Service | Cost |
 |---|---|
@@ -515,4 +563,4 @@ Total variable cost per active user per session: **~$0.003**. Negligible at demo
 
 ---
 
-*Architecture by Rocky & Lucy — Gherkin, 2026. Last updated 2026-07-01 (image attachment + focal point picker).*
+*Architecture by Rocky & Lucy — Gherkin, 2026. Last updated 2026-07-01 (image attachment + focal point picker + testing infrastructure).*
