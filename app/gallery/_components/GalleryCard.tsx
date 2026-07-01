@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { formatTag } from '@/lib/tags';
+import ImageSearch from '@/app/reflect/[promptId]/_components/ImageSearch';
+import type { ImageResult } from '@/lib/imageSearch';
 
 const TONE_LABELS: Record<string, string> = {
   poetic: 'Poetic',
@@ -12,13 +14,6 @@ const TONE_LABELS: Record<string, string> = {
   'as-written': 'As written',
 };
 
-type ReflectionImage = {
-  url: string;
-  label?: string;
-  creditName?: string;
-  creditUrl?: string;
-};
-
 type Props = {
   id: string;
   promptText: string;
@@ -26,7 +21,7 @@ type Props = {
   tone: string;
   createdAt: string;
   tags: string[];
-  image?: ReflectionImage | null;
+  image?: ImageResult | null;
 };
 
 type Mode = 'view' | 'edit' | 'confirm-delete';
@@ -36,6 +31,8 @@ export default function GalleryCard({ id, promptText, renderedText, tone, create
   const [mode, setMode] = useState<Mode>('view');
   const [editText, setEditText] = useState(renderedText);
   const [displayText, setDisplayText] = useState(renderedText);
+  const [displayImage, setDisplayImage] = useState<ImageResult | null>(image ?? null);
+  const [editImage, setEditImage] = useState<ImageResult | null>(image ?? null);
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -44,15 +41,17 @@ export default function GalleryCard({ id, promptText, renderedText, tone, create
     await fetch(`/api/reflect/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ renderedText: editText }),
+      body: JSON.stringify({ renderedText: editText, image: editImage }),
     });
     setDisplayText(editText);
+    setDisplayImage(editImage);
     setIsSaving(false);
     setMode('view');
   }
 
   function handleCancelEdit() {
     setEditText(displayText);
+    setEditImage(displayImage);
     setMode('view');
   }
 
@@ -64,13 +63,13 @@ export default function GalleryCard({ id, promptText, renderedText, tone, create
 
   return (
     <div className="break-inside-avoid mb-6 bg-white border border-stone-200 rounded-2xl overflow-hidden">
-      {image?.url && (
+      {displayImage?.url && (
         <div className="relative">
-          <img src={image.url} alt={image.label ?? ''} className="w-full h-48 object-cover" />
-          {image.creditName && (
+          <img src={displayImage.url} alt={displayImage.label ?? ''} className="w-full h-48 object-cover" />
+          {displayImage.creditName && (
             <p className="absolute bottom-1.5 right-2 text-[9px] text-white/70">
-              <a href={image.creditUrl} target="_blank" rel="noopener noreferrer">
-                © {image.creditName} / Unsplash
+              <a href={displayImage.creditUrl} target="_blank" rel="noopener noreferrer">
+                © {displayImage.creditName} / Unsplash
               </a>
             </p>
           )}
@@ -90,7 +89,13 @@ export default function GalleryCard({ id, promptText, renderedText, tone, create
             className="w-full text-sm text-stone-700 bg-transparent border-b border-stone-200 focus:outline-none focus:border-[#85A16A] resize-none leading-relaxed transition-colors pb-2 mb-6"
             rows={Math.max(4, displayText.split('\n').length + 2)}
           />
-          <div className="flex items-center gap-4">
+          <div className="mt-6 pt-4 border-t border-stone-100">
+            <p className="text-xs text-stone-400 uppercase tracking-widest mb-3">
+              Image <span className="normal-case">(optional)</span>
+            </p>
+            <ImageSearch selected={editImage} onSelect={setEditImage} />
+          </div>
+          <div className="flex items-center gap-4 mt-6">
             <button
               onClick={handleSave}
               disabled={isSaving || !editText.trim()}

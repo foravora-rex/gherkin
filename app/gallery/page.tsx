@@ -67,7 +67,7 @@ export default async function GalleryPage() {
                 tone={r.tone as string}
                 createdAt={formatDate(r.created_at as Date)}
                 tags={r.tags as string[]}
-                image={r.image as { url: string; label?: string; creditName?: string; creditUrl?: string } | null}
+                image={r.image as import('@/lib/imageSearch').ImageResult | null}
               />
             ))}
           </div>
