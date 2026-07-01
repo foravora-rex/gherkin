@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import type { ImageResult } from '@/lib/imageSearch';
+import FocalPointPicker from './FocalPointPicker';
 
 type Props = {
   selected: ImageResult | null;
@@ -45,31 +46,35 @@ export default function ImageSearch({ selected, onSelect }: Props) {
 
   if (selected) {
     return (
-      <div className="flex items-start gap-3">
-        <img
-          src={selected.url}
-          alt={selected.label}
-          loading="lazy"
-          className="w-14 h-14 object-cover rounded-lg flex-shrink-0"
-        />
-        <div className="flex-1 min-w-0">
-          <p className="text-xs text-stone-700 truncate">{selected.label}</p>
-          {selected.creditName && (
-            <p className="text-[10px] text-stone-400 mt-0.5">
-              Photo by{' '}
-              <a href={selected.creditUrl} target="_blank" rel="noopener noreferrer" className="underline">
-                {selected.creditName}
-              </a>{' '}
-              on Unsplash
-            </p>
-          )}
-          <button
-            onClick={() => onSelect(null)}
-            className="mt-1.5 text-[10px] text-stone-400 hover:text-stone-600 transition-colors"
-          >
-            Remove
-          </button>
+      <div>
+        <div className="flex items-start gap-3">
+          <img
+            src={selected.url}
+            alt={selected.label}
+            loading="lazy"
+            className="w-14 h-14 object-cover rounded-lg flex-shrink-0"
+            style={{ objectPosition: `${selected.focalX ?? 50}% ${selected.focalY ?? 50}%` }}
+          />
+          <div className="flex-1 min-w-0">
+            <p className="text-xs text-stone-700 truncate">{selected.label}</p>
+            {selected.creditName && (
+              <p className="text-[10px] text-stone-400 mt-0.5">
+                Photo by{' '}
+                <a href={selected.creditUrl} target="_blank" rel="noopener noreferrer" className="underline">
+                  {selected.creditName}
+                </a>{' '}
+                on Unsplash
+              </p>
+            )}
+            <button
+              onClick={() => onSelect(null)}
+              className="mt-1.5 text-[10px] text-stone-400 hover:text-stone-600 transition-colors"
+            >
+              Remove
+            </button>
+          </div>
         </div>
+        <FocalPointPicker image={selected} onChange={onSelect} />
       </div>
     );
   }
