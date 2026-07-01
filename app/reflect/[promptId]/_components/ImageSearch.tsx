@@ -49,6 +49,7 @@ export default function ImageSearch({ selected, onSelect }: Props) {
         <img
           src={selected.url}
           alt={selected.label}
+          loading="lazy"
           className="w-14 h-14 object-cover rounded-lg flex-shrink-0"
         />
         <div className="flex-1 min-w-0">
@@ -97,7 +98,7 @@ export default function ImageSearch({ selected, onSelect }: Props) {
               title={r.label}
               className="aspect-square overflow-hidden rounded-lg border border-stone-200 hover:border-[#85A16A] transition-colors"
             >
-              <img src={r.url} alt={r.label} className="w-full h-full object-cover" />
+              <img src={r.url} alt={r.label} loading="lazy" className="w-full h-full object-cover" />
             </button>
           ))}
         </div>

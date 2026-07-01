@@ -65,7 +65,7 @@ export default function GalleryCard({ id, promptText, renderedText, tone, create
     <div className="break-inside-avoid mb-6 bg-white border border-stone-200 rounded-2xl overflow-hidden">
       {displayImage?.url && (
         <div className="relative">
-          <img src={displayImage.url} alt={displayImage.label ?? ''} className="w-full h-48 object-cover" />
+          <img src={displayImage.url} alt={displayImage.label ?? ''} loading="lazy" className="w-full h-48 object-cover" />
           {displayImage.creditName && (
             <p className="absolute bottom-1.5 right-2 text-[9px] text-white/70">
               <a href={displayImage.creditUrl} target="_blank" rel="noopener noreferrer">
