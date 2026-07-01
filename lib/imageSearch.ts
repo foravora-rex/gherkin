@@ -6,6 +6,8 @@ export type ImageResult = {
   source: 'tmdb' | 'spotify' | 'anilist' | 'unsplash';
   creditName?: string;
   creditUrl?: string;
+  focalX?: number; // 0–100, defaults to 50
+  focalY?: number; // 0–100, defaults to 50
 };
 
 const TMDB_IMG_BASE = 'https://image.tmdb.org/t/p/w500';
