@@ -1,6 +1,8 @@
 import { sql } from './db';
 import { generateEmbedding } from './embeddings';
-import { formatTag } from './tags';
+import { buildProfileString } from './profile';
+
+export { buildProfileString };
 
 type Prompt = {
   id: string;
@@ -18,14 +20,6 @@ const BROAD_TO_CATEGORY: Record<string, string> = {
   'screen-stage': 'screen-and-stage',
   'stories-words': 'stories-and-words',
 };
-
-export function buildProfileString(tags: string[], innerLife: string[], chapter: string | null): string {
-  const parts: string[] = [];
-  if (tags.length > 0) parts.push(`Interests: ${tags.map(formatTag).join(', ')}.`);
-  if (innerLife.length > 0) parts.push(`Inner life: ${innerLife.join(', ')}.`);
-  if (chapter) parts.push(`Chapter: ${chapter}.`);
-  return parts.join(' ') || 'Open to anything.';
-}
 
 export function buildAdjacentPool(userTags: string[]): string[] {
   const preferredCategories = userTags

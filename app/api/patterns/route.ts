@@ -1,4 +1,3 @@
-import { createHash } from 'crypto';
 import Anthropic from '@anthropic-ai/sdk';
 import { auth } from '@clerk/nextjs/server';
 import { NextRequest, NextResponse } from 'next/server';
@@ -6,6 +5,7 @@ import { sql } from '@/lib/db';
 import { patternLimiter } from '@/lib/ratelimit';
 import redis from '@/lib/redis';
 import { stripJsonFences } from '@/lib/json';
+import { buildFingerprint } from '@/lib/fingerprint';
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -41,10 +41,6 @@ type PatternsCache = {
   patterns: Pattern[];
 };
 
-function buildFingerprint(rows: Record<string, unknown>[]): string {
-  const content = rows.map((r) => r.rendered_text as string).join('\x00');
-  return createHash('sha256').update(content).digest('hex').slice(0, 16);
-}
 
 export async function POST(req: NextRequest) {
   const { userId } = await auth();
@@ -63,7 +59,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Not enough reflections' }, { status: 422 });
   }
 
-  const fingerprint = buildFingerprint(rows);
+  const fingerprint = buildFingerprint(rows as { rendered_text: string }[]);
   const cacheKey = `${CACHE_KEY_PREFIX}:${userId}`;
 
   if (!force) {
