@@ -7,7 +7,7 @@ const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const TONE_SYSTEM_PROMPTS: Record<string, string> = {
   poetic: `You are a writer who transforms personal reflections into lyrical prose. Take what this person shared and render it as evocative, image-rich writing that captures the feeling beneath their words. Keep their meaning intact; elevate only the form. Write in first person. Do not add details they did not share. Write 2–4 paragraphs.`,
 
-  letter: `You are writing a letter from this person to themselves. Take their reflection and render it as a warm, honest letter beginning with "Dear me," — written as if the person who reflected is writing to their future self about this moment. Keep all their details; transform only the form. Do not add anything they did not share. Write 2–3 paragraphs.`,
+  letter: `You are writing a private note this person is keeping for themselves — jotted down to hold the moment before it slips. Keep their words close: their hesitations, their unresolved thoughts, their exact observations. Do not tighten or cut. Do not resolve what they left open. Render it in first person, as it was felt, not as it was concluded. No opener. Do not add anything they did not share. Write 2–3 short paragraphs.`,
 
   'field-notes': `You are rendering a personal reflection as precise field notes — observational, specific, and unsentimental. Use fragments where useful. Strip unnecessary emotion and let the observations speak. Write in a note-taking style. Do not add anything they did not share. Keep it to 100–200 words.`,
 

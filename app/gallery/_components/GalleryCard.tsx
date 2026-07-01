@@ -6,7 +6,7 @@ import { formatTag } from '@/lib/tags';
 
 const TONE_LABELS: Record<string, string> = {
   poetic: 'Poetic',
-  letter: 'Letter to myself',
+  letter: 'Note to self',
   'field-notes': 'Field notes',
   unfiltered: 'Unfiltered',
   'as-written': 'As written',

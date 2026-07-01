@@ -16,7 +16,7 @@ type Props = {
 
 const TONES = [
   { id: 'poetic', label: 'Poetic', description: 'Lyrical and evocative' },
-  { id: 'letter', label: 'Letter to myself', description: 'Written to your future self' },
+  { id: 'letter', label: 'Note to self', description: 'Held as it was felt' },
   { id: 'field-notes', label: 'Field notes', description: 'Observational and precise' },
   { id: 'unfiltered', label: 'Unfiltered', description: 'Raw and honest' },
 ];
