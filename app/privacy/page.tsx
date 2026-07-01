@@ -24,7 +24,7 @@ export default function PrivacyPage() {
           Privacy Policy
         </h1>
         <p className="text-xs text-[#466353] mb-12">
-          Last updated: June 2026 &mdash;{" "}
+          Last updated: July 2026 &mdash;{" "}
           <span className="italic">
             Note: this policy has not been reviewed by a lawyer. It represents
             our genuine intent, but should not be treated as legal advice.
@@ -94,6 +94,20 @@ export default function PrivacyPage() {
                 performance.
               </p>
             </div>
+            <div>
+              <p className="font-medium text-stone-800 mb-1">
+                Image search queries
+              </p>
+              <p>
+                When you search for an image to attach to a reflection, the
+                text you type is sent to four external image APIs (TMDB,
+                Spotify, AniList, Unsplash) to retrieve results. These
+                queries are not stored by us, but are processed by each
+                provider under their own terms. If you select an image, its
+                URL and attribution metadata are stored alongside your
+                reflection. Legal basis: contract performance.
+              </p>
+            </div>
           </div>
         </section>
 
@@ -130,6 +144,18 @@ export default function PrivacyPage() {
               </li>
               <li>
                 <span className="font-medium text-stone-800">Vercel Analytics</span> — cookieless page view analytics. No personal data, no cross-site tracking, no cookies.
+              </li>
+              <li>
+                <span className="font-medium text-stone-800">TMDB</span> — image search for films, TV shows, and actors. Your search query is sent to their API. No account data is shared.
+              </li>
+              <li>
+                <span className="font-medium text-stone-800">Spotify</span> — image search for artists. Your search query is sent to their API using client credentials (not linked to any Spotify account). No account data is shared.
+              </li>
+              <li>
+                <span className="font-medium text-stone-800">AniList</span> — image search for anime characters and titles. Public API; no authentication required. Your search query is sent to their GraphQL endpoint.
+              </li>
+              <li>
+                <span className="font-medium text-stone-800">Unsplash</span> — image search for mood and aesthetic photos. Your search query is sent to their API. If you select an Unsplash photo, photographer attribution is stored alongside your reflection and displayed as required by Unsplash&apos;s guidelines.
               </li>
             </ul>
             <p>

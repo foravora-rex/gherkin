@@ -24,7 +24,7 @@ export default function TermsPage() {
           Terms of Service
         </h1>
         <p className="text-xs text-[#466353] mb-12">
-          Last updated: June 2025 &mdash;{" "}
+          Last updated: July 2026 &mdash;{" "}
           <span className="italic">
             Note: these terms have not been reviewed by a lawyer. They represent
             our genuine intent, but should not be treated as legal advice.
@@ -108,6 +108,13 @@ export default function TermsPage() {
             <p>
               Gherkin is not a mental health tool and is not a substitute for
               professional support.
+            </p>
+            <p>
+              Images displayed via the image search feature come from
+              third-party services (TMDB, Spotify, AniList, Unsplash). These
+              images are subject to each provider&apos;s own terms of use. We
+              do not host or own the images. Unsplash images include required
+              photographer attribution, which is displayed alongside the image.
             </p>
           </div>
         </section>

@@ -5,6 +5,7 @@
 *Pattern surfacing prompt deepened 2026-06-29: scientific grounding, temperature 0.4*  
 *Bubble animation added 2026-06-29: lactofermentation branding, fixed viewport layer*  
 *Pattern result caching added 2026-07-01: content fingerprint, Redis cache, rate limit bypass on hit*
+*Image attachment added 2026-07-01: TMDB, Spotify, AniList, Unsplash; drag-to-reposition focal point picker*
 
 ---
 
@@ -160,7 +161,7 @@ Anthropic does not offer an embedding API. Claude handles text generation; a sep
 
 **Reasoning:**
 
-Claude is the right model for text that needs to feel genuinely human and emotionally intelligent. The five rendering options (Poetic, Letter to myself, Field notes, Unfiltered, and As written) require a model that can hold a consistent voice, understand register, and produce prose that doesn't feel generated. Claude Sonnet is the balance point between quality and cost — Claude Opus would be higher quality but the cost difference is not justified for a demo.
+Claude is the right model for text that needs to feel genuinely human and emotionally intelligent. The five rendering options (Poetic, Note to self, Field notes, Unfiltered, and As written) require a model that can hold a consistent voice, understand register, and produce prose that doesn't feel generated. Claude Sonnet is the balance point between quality and cost — Claude Opus would be higher quality but the cost difference is not justified for a demo.
 
 **Tasks handled by Claude:**
 1. **Tone rendering** — Takes the user's raw transcript and renders it in the chosen tone. The prompt is precise about each tone's characteristics.
@@ -262,6 +263,7 @@ prompt_text   TEXT                — Denormalised for display without join
 transcript    TEXT                — Raw user input
 rendered_text TEXT                — AI-rendered version (or transcript if 'as-written')
 tone          TEXT                — 'as-written' | 'poetic' | 'letter' | 'field-notes' | 'unfiltered'
+image         JSONB (nullable)    — Attached image: url, label, source, creditName?, creditUrl?, focalX?, focalY?
 embedding     vector(1536)        — For pattern surfacing
 created_at    TIMESTAMPTZ
 ```
@@ -349,7 +351,58 @@ The product name and philosophy — a gherkin is a cucumber that went through la
 
 ---
 
-## 14. Analytics
+## 14. Image Attachment
+
+Users can optionally attach a single image to a reflection — both at save time (during the reflection flow, after selecting a tone) and retroactively from the gallery edit view.
+
+### 14.1 Image Search
+
+Search queries are dispatched in parallel to four external APIs via `lib/imageSearch.ts`, collected with `Promise.allSettled` so one failing source never blocks the others:
+
+| Source | What it returns | Auth |
+|---|---|---|
+| TMDB | Films, TV shows, actors — poster and profile images | API key |
+| Spotify | Artists — artist photos and album art | Client credentials OAuth; token cached 50 min in Redis at `gherkin:spotify_token` |
+| AniList | Anime characters and titles — cover images | None — public GraphQL API |
+| Unsplash | Mood/aesthetic photos | Access key; photographer attribution required and displayed |
+
+The search endpoint (`GET /api/images/search`) is auth-gated. Queries must be at least 2 characters. Debounced at 400ms in the `ImageSearch` component to avoid hammering the APIs on each keystroke.
+
+### 14.2 Image Storage
+
+A selected image is stored as a JSONB column on `reflections`. Example:
+
+```json
+{
+  "url": "https://image.tmdb.org/t/p/w500/abc123.jpg",
+  "label": "Sofia Coppola",
+  "source": "tmdb",
+  "focalX": 60,
+  "focalY": 30
+}
+```
+
+`focalX` and `focalY` (0–100, default 50) encode the user's chosen crop anchor point. At render time, `object-position: {focalX}% {focalY}%` is applied to the `<img>` element, controlling which part of the image is visible when it is cropped to a fixed aspect ratio.
+
+### 14.3 Focal Point Picker
+
+`FocalPointPicker` (`app/reflect/[promptId]/_components/FocalPointPicker.tsx`) is a shared drag-to-reposition control used in two places:
+- During the reflection flow, after an image is selected and before the reflection is saved
+- In gallery edit mode, when adding or changing the attached image
+
+Interaction: the user drags over a preview of the image. `setPointerCapture` ensures drag events are tracked reliably even when the pointer moves outside the element boundary at speed. Direction: drag right → image frame shifts right (focalX decreases); drag down → frame shifts down (focalY decreases). A white dot indicator marks the current focal point.
+
+### 14.4 Unsplash Attribution
+
+The Unsplash API Guidelines require visible photographer credit on all displayed images. Implementation:
+- `creditName` and `creditUrl` are stored on the `ImageResult` alongside the image URL
+- Gallery cards overlay "© Name / Unsplash" at bottom-right of the image
+- During the reflection flow, credit appears beneath the selected image thumbnail
+- All credit links include `utm_source=gherkin&utm_medium=referral` as required by Unsplash's guidelines
+
+---
+
+## 15. Analytics
 
 **Decision:** Vercel Analytics + PostHog, over Google Analytics.
 
@@ -382,7 +435,7 @@ The product name and philosophy — a gherkin is a cucumber that went through la
 
 ---
 
-## 15. Security
+## 16. Security
 
 ### Access Control: Application-Level Auth via Clerk (Demo)
 
@@ -426,7 +479,7 @@ Enforced by Vercel on all deployments. Required for Clerk auth and for the Web S
 
 ---
 
-## 16. What Is Deferred
+## 17. What Is Deferred
 
 | Feature | Status | Reason |
 |---|---|---|
@@ -440,7 +493,7 @@ Enforced by Vercel on all deployments. Required for Clerk auth and for the Web S
 
 ---
 
-## 17. Cost Summary (Demo Phase)
+## 18. Cost Summary (Demo Phase)
 
 | Service | Cost |
 |---|---|
@@ -452,10 +505,14 @@ Enforced by Vercel on all deployments. Required for Clerk auth and for the Web S
 | OpenAI embeddings | ~$0.00002 per prompt (one-time seed cost) |
 | Claude API (tone rendering) | ~$0.003 per reflection |
 | Claude API (pattern surfacing) | ~$0.005 per synthesis; $0 on cache hit (same reflections) |
+| TMDB API (image search) | $0 — free tier |
+| Spotify API (image search) | $0 — free client credentials tier |
+| AniList (image search) | $0 — public API, no key required |
+| Unsplash API (image search) | $0 — free tier (50 requests/hour) |
 | PostHog (product analytics) | $0 — free up to 1M events/month |
 
 Total variable cost per active user per session: **~$0.003**. Negligible at demo scale.
 
 ---
 
-*Architecture by Rocky & Lucy — Gherkin, 2026. Last updated 2026-07-01.*
+*Architecture by Rocky & Lucy — Gherkin, 2026. Last updated 2026-07-01 (image attachment + focal point picker).*
