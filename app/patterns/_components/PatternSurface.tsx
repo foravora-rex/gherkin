@@ -15,16 +15,17 @@ export default function PatternSurface({ reflectionCount }: Props) {
   const [status, setStatus] = useState<Status>('loading');
   const [patterns, setPatterns] = useState<Pattern[]>([]);
 
-  async function fetchPatterns() {
+  async function fetchPatterns(force = false) {
     setStatus('loading');
     try {
-      const res = await fetch('/api/patterns', { method: 'POST' });
+      const url = force ? '/api/patterns?force=true' : '/api/patterns';
+      const res = await fetch(url, { method: 'POST' });
       if (res.status === 429) { setStatus('rate-limited'); return; }
       if (!res.ok) { setStatus('error'); return; }
       const data = await res.json();
       setPatterns(data.patterns);
       setStatus('result');
-      posthog?.capture('patterns_surfaced', { reflectionCount });
+      if (!data.cached) posthog?.capture('patterns_surfaced', { reflectionCount });
     } catch {
       setStatus('error');
     }
@@ -53,7 +54,7 @@ export default function PatternSurface({ reflectionCount }: Props) {
       <div className="py-32 text-center">
         <p className="text-sm text-[#466353] mb-4">Something went wrong.</p>
         <button
-          onClick={fetchPatterns}
+          onClick={() => { fetchPatterns(); }}
           className="text-xs text-[#466353] underline hover:text-stone-700 transition-colors"
         >
           Try again
@@ -83,7 +84,7 @@ export default function PatternSurface({ reflectionCount }: Props) {
 
       <div className="mt-10 flex justify-center">
         <button
-          onClick={fetchPatterns}
+          onClick={() => { fetchPatterns(true); }}
           className="text-xs text-[#466353] hover:text-stone-700 transition-colors"
         >
           See it differently →

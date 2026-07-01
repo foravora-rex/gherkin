@@ -1,8 +1,10 @@
+import { createHash } from 'crypto';
 import Anthropic from '@anthropic-ai/sdk';
 import { auth } from '@clerk/nextjs/server';
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { sql } from '@/lib/db';
 import { patternLimiter } from '@/lib/ratelimit';
+import redis from '@/lib/redis';
 import { stripJsonFences } from '@/lib/json';
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
@@ -31,14 +33,24 @@ export type Pattern = {
   observation: string;
 };
 
-export async function POST() {
+const CACHE_KEY_PREFIX = 'gherkin:patterns_cache';
+const CACHE_TTL_SECONDS = 60 * 60 * 24 * 90; // 90 days — fingerprint invalidates before TTL in practice
+
+type PatternsCache = {
+  fingerprint: string;
+  patterns: Pattern[];
+};
+
+function buildFingerprint(rows: Record<string, unknown>[]): string {
+  const content = rows.map((r) => r.rendered_text as string).join('\x00');
+  return createHash('sha256').update(content).digest('hex').slice(0, 16);
+}
+
+export async function POST(req: NextRequest) {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { success } = await patternLimiter.limit(userId);
-  if (!success) {
-    return NextResponse.json({ error: 'Daily pattern limit reached' }, { status: 429 });
-  }
+  const force = req.nextUrl.searchParams.get('force') === 'true';
 
   const rows = await sql`
     SELECT prompt_text, rendered_text
@@ -49,6 +61,21 @@ export async function POST() {
 
   if (rows.length < 3) {
     return NextResponse.json({ error: 'Not enough reflections' }, { status: 422 });
+  }
+
+  const fingerprint = buildFingerprint(rows);
+  const cacheKey = `${CACHE_KEY_PREFIX}:${userId}`;
+
+  if (!force) {
+    const cached = await redis.get<PatternsCache>(cacheKey);
+    if (cached?.fingerprint === fingerprint) {
+      return NextResponse.json({ patterns: cached.patterns, reflectionCount: rows.length, cached: true });
+    }
+  }
+
+  const { success } = await patternLimiter.limit(userId);
+  if (!success) {
+    return NextResponse.json({ error: 'Daily pattern limit reached' }, { status: 429 });
   }
 
   const reflectionsText = rows
@@ -79,5 +106,7 @@ export async function POST() {
   const json = stripJsonFences(raw);
   const patterns: Pattern[] = JSON.parse(json);
 
-  return NextResponse.json({ patterns, reflectionCount: rows.length });
+  await redis.set<PatternsCache>(cacheKey, { fingerprint, patterns }, { ex: CACHE_TTL_SECONDS });
+
+  return NextResponse.json({ patterns, reflectionCount: rows.length, cached: false });
 }
