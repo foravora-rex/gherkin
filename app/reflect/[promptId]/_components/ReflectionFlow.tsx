@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { usePostHog } from 'posthog-js/react';
 import { useVoiceDictation } from '@/lib/hooks/useVoiceDictation';
+import ImageSearch from './ImageSearch';
+import type { ImageResult } from '@/lib/imageSearch';
 
 type Step = 'answer' | 'follow-up' | 'tone' | 'rendering' | 'result';
 
@@ -52,6 +54,7 @@ export default function ReflectionFlow({ promptId, promptText, followUp, preferr
   const [selectedTone, setSelectedTone] = useState(preferredTone ?? 'unfiltered');
   const [renderedText, setRenderedText] = useState('');
   const [originalRenderedText, setOriginalRenderedText] = useState('');
+  const [selectedImage, setSelectedImage] = useState<ImageResult | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -92,6 +95,7 @@ export default function ReflectionFlow({ promptId, promptText, followUp, preferr
           transcript: fullTranscript,
           renderedText,
           tone: selectedTone,
+          image: selectedImage,
         }),
       });
       posthog?.capture('reflection_saved', {
@@ -315,8 +319,14 @@ export default function ReflectionFlow({ promptId, promptText, followUp, preferr
         <textarea
           value={renderedText}
           onChange={(e) => setRenderedText(e.target.value)}
-          className="w-full min-h-64 text-sm text-stone-700 bg-transparent border-b border-stone-200 focus:outline-none focus:border-[#85A16A] resize-none leading-relaxed transition-colors pb-2 mb-12"
+          className="w-full min-h-64 text-sm text-stone-700 bg-transparent border-b border-stone-200 focus:outline-none focus:border-[#85A16A] resize-none leading-relaxed transition-colors pb-2 mb-10"
         />
+        <div className="mb-10 pt-6 border-t border-stone-100">
+          <p className="text-xs text-stone-400 uppercase tracking-widest mb-4">
+            Add an image <span className="normal-case">(optional)</span>
+          </p>
+          <ImageSearch selected={selectedImage} onSelect={setSelectedImage} />
+        </div>
         {error && <p className="text-sm text-red-400 mb-6">{error}</p>}
         <div className="flex items-center gap-6">
           <button

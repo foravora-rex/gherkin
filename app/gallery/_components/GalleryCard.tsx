@@ -12,6 +12,13 @@ const TONE_LABELS: Record<string, string> = {
   'as-written': 'As written',
 };
 
+type ReflectionImage = {
+  url: string;
+  label?: string;
+  creditName?: string;
+  creditUrl?: string;
+};
+
 type Props = {
   id: string;
   promptText: string;
@@ -19,11 +26,12 @@ type Props = {
   tone: string;
   createdAt: string;
   tags: string[];
+  image?: ReflectionImage | null;
 };
 
 type Mode = 'view' | 'edit' | 'confirm-delete';
 
-export default function GalleryCard({ id, promptText, renderedText, tone, createdAt, tags }: Props) {
+export default function GalleryCard({ id, promptText, renderedText, tone, createdAt, tags, image }: Props) {
   const router = useRouter();
   const [mode, setMode] = useState<Mode>('view');
   const [editText, setEditText] = useState(renderedText);
@@ -55,7 +63,20 @@ export default function GalleryCard({ id, promptText, renderedText, tone, create
   }
 
   return (
-    <div className="break-inside-avoid mb-6 bg-white border border-stone-200 rounded-2xl p-6">
+    <div className="break-inside-avoid mb-6 bg-white border border-stone-200 rounded-2xl overflow-hidden">
+      {image?.url && (
+        <div className="relative">
+          <img src={image.url} alt={image.label ?? ''} className="w-full h-48 object-cover" />
+          {image.creditName && (
+            <p className="absolute bottom-1.5 right-2 text-[9px] text-white/70">
+              <a href={image.creditUrl} target="_blank" rel="noopener noreferrer">
+                © {image.creditName} / Unsplash
+              </a>
+            </p>
+          )}
+        </div>
+      )}
+      <div className="p-6">
       <p className="text-xs text-[#466353] mb-4">{createdAt}</p>
 
       <p className="text-xs text-[#466353] italic mb-4 leading-relaxed">{promptText}</p>
@@ -142,6 +163,7 @@ export default function GalleryCard({ id, promptText, renderedText, tone, create
           </button>
         </div>
       )}
+      </div>
     </div>
   );
 }

@@ -14,12 +14,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Daily reflection limit reached' }, { status: 429 });
   }
 
-  const { promptId, promptText, transcript, renderedText, tone } = await request.json();
+  const { promptId, promptText, transcript, renderedText, tone, image } = await request.json();
 
   const embedding = await generateEmbedding(transcript);
 
   await sql`
-    INSERT INTO reflections (clerk_id, prompt_id, prompt_text, transcript, rendered_text, tone, embedding)
+    INSERT INTO reflections (clerk_id, prompt_id, prompt_text, transcript, rendered_text, tone, embedding, image)
     VALUES (
       ${userId},
       ${promptId},
@@ -27,7 +27,8 @@ export async function POST(request: Request) {
       ${transcript},
       ${renderedText},
       ${tone},
-      ${JSON.stringify(embedding)}
+      ${JSON.stringify(embedding)},
+      ${image ? JSON.stringify(image) : null}
     )
   `;
 

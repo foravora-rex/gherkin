@@ -18,7 +18,7 @@ export default async function GalleryPage() {
   if (!userId) redirect('/sign-in');
 
   const reflections = await sql`
-    SELECT r.id, r.prompt_text, r.rendered_text, r.tone, r.created_at, p.tags
+    SELECT r.id, r.prompt_text, r.rendered_text, r.tone, r.created_at, r.image, p.tags
     FROM reflections r
     JOIN prompts p ON p.id = r.prompt_id
     WHERE r.clerk_id = ${userId}
@@ -67,6 +67,7 @@ export default async function GalleryPage() {
                 tone={r.tone as string}
                 createdAt={formatDate(r.created_at as Date)}
                 tags={r.tags as string[]}
+                image={r.image as { url: string; label?: string; creditName?: string; creditUrl?: string } | null}
               />
             ))}
           </div>
